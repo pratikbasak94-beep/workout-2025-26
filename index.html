@@ -3,131 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>90kg to 65kg Tracker</title>
+    <title>Transformation Tracker</title>
     <style>
-        :root {
-            --primary: #2563eb;
-            --bg: #f3f4f6;
-            --card-bg: #ffffff;
-            --text: #1f2937;
-            --success: #10b981;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            line-height: 1.5;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        h1 { margin: 0; color: var(--primary); font-size: 1.8rem; }
-        p { color: #666; margin-top: 5px; }
-        .tz-badge { font-size: 0.75rem; background: #e5e7eb; padding: 2px 6px; border-radius: 4px; color: #4b5563; }
-
-        .day-card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            border-left: 5px solid var(--primary);
-        }
-
-        .day-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-        }
-
-        .day-title { font-weight: bold; font-size: 1.2rem; }
-        .date-badge { background: #e0e7ff; color: var(--primary); padding: 4px 8px; border-radius: 6px; font-size: 0.9rem; font-weight: 600; }
-
-        .section-title {
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #888;
-            margin: 10px 0 5px 0;
-            font-weight: bold;
-        }
-
-        .checklist-item {
-            display: flex;
-            align-items: center;
-            padding: 8px 0;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .checklist-item:hover { background-color: #f9fafb; }
-
-        input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            margin-right: 15px;
-            cursor: pointer;
-            accent-color: var(--success);
-        }
-
-        /* Strikethrough effect when checked */
-        input[type="checkbox"]:checked + span {
-            text-decoration: line-through;
-            color: #9ca3af;
-        }
-
-        .btn-reset {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            background-color: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 40px;
-        }
+        :root { --primary: #2563eb; --bg: #f3f4f6; --card: #ffffff; --text: #1f2937; --success: #10b981; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; }
+        .container { max-width: 600px; margin: 0 auto; padding-bottom: 50px; }
         
-        .sunday-card { border-left-color: #10b981; } /* Green border for Sunday */
+        /* Header & Navigation */
+        header { text-align: center; margin-bottom: 20px; }
+        h1 { color: var(--primary); margin: 0; font-size: 1.5rem; }
+        .nav-controls { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; background: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-nav { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-nav:hover { opacity: 0.9; }
+        .current-range { font-weight: bold; font-size: 0.9rem; }
+
+        /* Cards */
+        .day-card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; border-left: 5px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .sunday-card { border-left-color: var(--success); }
+        
+        .day-header { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .day-name { font-weight: bold; }
+        .day-date { background: #e0e7ff; color: var(--primary); padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; }
+
+        .section-title { font-size: 0.8rem; text-transform: uppercase; color: #888; margin: 10px 0 5px 0; font-weight: bold; }
+        
+        /* Checkboxes */
+        .checklist-item { display: flex; align-items: center; padding: 6px 0; cursor: pointer; }
+        input[type="checkbox"] { width: 18px; height: 18px; margin-right: 10px; accent-color: var(--success); }
+        input[type="checkbox"]:checked + span { text-decoration: line-through; color: #9ca3af; }
+
+        /* Stats */
+        .stats-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 10px; border-top: 1px solid #eee; text-align: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+        .progress-text { font-size: 0.9rem; font-weight: bold; color: var(--primary); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>Weight Loss Roadmap</h1>
-        <p>Goal: 90kg &rarr; 65kg <br> <span class="tz-badge">Zone: India Standard Time (IST)</span></p>
+        <h1>90kg &rarr; 65kg Journey</h1>
+        <div class="nav-controls">
+            <button class="btn-nav" onclick="changeWeek(-7)">&#8592; Prev</button>
+            <span class="current-range" id="week-display">...</span>
+            <button class="btn-nav" onclick="changeWeek(7)">Next &#8594;</button>
+        </div>
     </header>
 
-    <div id="tracker-app">
-        </div>
+    <div id="tracker-app"></div>
+</div>
 
-    <button class="btn-reset" onclick="resetProgress()">⚠ Reset All Progress</button>
+<div class="stats-bar">
+    <div class="progress-text" id="completion-rate">Weekly Progress: 0%</div>
 </div>
 
 <script>
-    // 1. Configuration: Start Date
-    const startYear = 2025;
-    const startMonth = 11; // December
-    const startDay = 15;   
+    // --- CONFIGURATION ---
+    // Start Date: Monday, Dec 15, 2025
+    // Note: Month is 0-indexed (11 = Dec)
+    const baseDate = new Date(2025, 11, 15); 
     
-    // 2. The Routine Data
+    // Track which Monday we are currently viewing (Starts at baseDate)
+    let currentMonday = new Date(baseDate);
+
+    // --- DATA ---
     const workoutPlan = [
         { type: "Lower Body", tasks: ["Sit-to-Stand: 3x5", "Wall Sit: 2x20s", "Leg Lifts: 2x8"] }, // Mon
         { type: "Upper Body A", tasks: ["Tube Rows: 3x12", "Tube Shoulder Press: 3x10", "Tube Face Pulls: 3x12"] }, // Tue
@@ -138,116 +76,113 @@
         { type: "REST DAY", tasks: ["No Gym", "Walk Only", "Sleep Well"] } // Sun
     ];
 
-    const dietPlan = [
-        "9AM: 50g Sattu + Lemon",
-        "11AM: Lunch (Rotis/Rice + Sabzi)",
-        "2:30PM: Banana (Singapuri)",
-        "6:30PM: Tea (NO BISCUIT)",
-        "8:30PM: 2 Rotis (Dry) + Sabzi"
-    ];
-
-    const sundayDiet = [
-        "9AM: 50g Sattu + Lemon",
-        "11AM: Lunch (CHICKEN + Less Rice)",
-        "2:30PM: Banana",
-        "6:30PM: Tea (No Biscuit)",
-        "8:30PM: 2 Rotis (Dry)"
-    ];
-
+    const dietPlan = [ "9AM: 50g Sattu + Lemon", "11AM: Lunch (Rotis/Rice + Sabzi)", "2:30PM: Banana", "6:30PM: Tea (NO BISCUIT)", "8:30PM: 2 Rotis (Dry)" ];
+    const sundayDiet = [ "9AM: Sattu", "11AM: Lunch (CHICKEN + Less Rice)", "2:30PM: Banana", "6:30PM: Tea", "8:30PM: 2 Rotis" ];
     const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-    // 3. Logic to Render the Page
-    function renderApp() {
+    // --- APP LOGIC ---
+
+    function init() {
+        renderWeek();
+    }
+
+    function changeWeek(offsetDays) {
+        currentMonday.setDate(currentMonday.getDate() + offsetDays);
+        renderWeek();
+    }
+
+    function renderWeek() {
         const app = document.getElementById('tracker-app');
-        app.innerHTML = ''; // Clear existing
+        app.innerHTML = '';
+        
+        let totalTasks = 0;
+        let completedTasks = 0;
 
+        // Calculate End of Week for Header
+        let sunday = new Date(currentMonday);
+        sunday.setDate(currentMonday.getDate() + 6);
+        
+        // Update Header Text
+        document.getElementById('week-display').innerText = 
+            formatDate(currentMonday) + ' - ' + formatDate(sunday);
+
+        // Generate 7 Days
         for (let i = 0; i < 7; i++) {
-            // Calculate Date safely for Local Timezone
-            let currentDate = new Date(startYear, startMonth, startDay + i);
+            // Calculate specific date for this card
+            let cardDate = new Date(currentMonday);
+            cardDate.setDate(currentMonday.getDate() + i);
+            let dateStr = formatDate(cardDate);
             
-            // Format for India (DD Month YYYY)
-            let dateString = currentDate.toLocaleDateString('en-IN', { 
-                day: 'numeric', 
-                month: 'short', 
-                year: 'numeric' 
-            });
+            // Unique Key for Storage: "YYYY-MM-DD_TaskID"
+            // This ensures every week has its own history!
+            let storageDateKey = cardDate.toISOString().split('T')[0]; 
 
-            // Determine Data for the day
             let dayName = days[i];
             let wPlan = workoutPlan[i];
             let dPlan = (dayName === "Sunday") ? sundayDiet : dietPlan;
             let cardClass = (dayName === "Sunday") ? "day-card sunday-card" : "day-card";
 
-            // --- FIXED SECTION: Using simple '+' for strings (No Backtick Errors) ---
-            
-            // Generate Diet Items HTML
+            // Generate HTML for Diet
             let dietHtml = "";
             dPlan.forEach((item, idx) => {
-                // Using simple quotes to avoid confusion
-                let id = 'day' + i + '_diet' + idx; 
-                dietHtml += createCheckbox(id, item);
+                let id = storageDateKey + 'diet' + idx;
+                let isChecked = localStorage.getItem(id) === 'true';
+                if(isChecked) completedTasks++;
+                totalTasks++;
+                dietHtml += createCheckbox(id, item, isChecked);
             });
 
-            // Generate Workout Items HTML
+            // Generate HTML for Workout
             let workoutHtml = "";
             wPlan.tasks.forEach((item, idx) => {
-                let id = 'day' + i + '_workout' + idx;
-                workoutHtml += createCheckbox(id, item);
+                let id = storageDateKey + 'workout' + idx;
+                let isChecked = localStorage.getItem(id) === 'true';
+                if(isChecked) completedTasks++;
+                totalTasks++;
+                workoutHtml += createCheckbox(id, item, isChecked);
             });
 
-            // Build the final Card HTML using simple concatenation
-            let html = 
+            // Build Card
+            app.innerHTML += 
                 '<div class="' + cardClass + '">' +
                     '<div class="day-header">' +
-                        '<span class="day-title">' + dayName + '</span>' +
-                        '<span class="date-badge">' + dateString + '</span>' +
+                        '<span class="day-name">' + dayName + '</span>' +
+                        '<span class="day-date">' + dateStr + '</span>' +
                     '</div>' +
-                    
-                    '<div class="section-title">🍽 Diet</div>' +
-                    dietHtml +
-
-                    '<div class="section-title" style="margin-top:15px; color:#2563eb;">🏋 ' + wPlan.type + '</div>' +
-                    workoutHtml +
+                    '<div class="section-title">🍽 Diet</div>' + dietHtml +
+                    '<div class="section-title" style="color:var(--primary)">🏋 ' + wPlan.type + '</div>' + workoutHtml +
                 '</div>';
-            
-            app.innerHTML += html;
         }
-        loadProgress(); // Restore ticks
+        
+        updateStats(completedTasks, totalTasks);
     }
 
-    // Helper to create checkbox HTML
-    function createCheckbox(id, text) {
+    function createCheckbox(id, text, checked) {
+        let checkedAttr = checked ? 'checked' : '';
         return '<label class="checklist-item">' +
-                '<input type="checkbox" id="' + id + '" onchange="saveProgress(this)">' +
+                '<input type="checkbox" id="' + id + '" ' + checkedAttr + ' onchange="toggleTask(this)">' +
                 '<span>' + text + '</span>' +
             '</label>';
     }
 
-    // 4. Local Storage (Save/Load Logic)
-    function saveProgress(checkbox) {
+    function toggleTask(checkbox) {
         localStorage.setItem(checkbox.id, checkbox.checked);
+        // Recalculate stats immediately
+        renderWeek(); 
     }
 
-    function loadProgress() {
-        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach(box => {
-            const saved = localStorage.getItem(box.id);
-            if (saved === 'true') {
-                box.checked = true;
-            }
-        });
+    function formatDate(date) {
+        return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
     }
 
-    function resetProgress() {
-        if(confirm("Start a new week? This will uncheck everything.")) {
-            localStorage.clear();
-            location.reload();
-        }
+    function updateStats(completed, total) {
+        let percent = Math.round((completed / total) * 100);
+        document.getElementById('completion-rate').innerText = 'Weekly Progress: ' + percent + '%';
     }
 
-    // Run on Load
-    renderApp();
+    // Start
+    init();
+
 </script>
-
 </body>
 </html>
