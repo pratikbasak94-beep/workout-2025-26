@@ -61,7 +61,7 @@
     <div id="tracker-app"></div>
 
     <div class="sync-area">
-        <p style="font-size:0.8rem; color:#666; margin-bottom:10px;">Backup your data (includes your custom workout names)</p>
+        <p style="font-size:0.8rem; color:#666; margin-bottom:10px;">Backup your data (includes your custom diet & workouts)</p>
         <button class="btn-backup" onclick="downloadData()">💾 Save Progress</button>
         <button class="btn-restore" onclick="triggerUpload()">📂 Load Data</button>
         <input type="file" id="file-input" accept=".json" onchange="loadData(this)">
@@ -77,7 +77,7 @@
     const baseDate = new Date(2025, 11, 15); // Dec 15, 2025
     let currentMonday = new Date(baseDate);
 
-    // --- DEFAULT DATA (Fallback) ---
+    // --- DEFAULT WORKOUT DATA ---
     const defaultWorkoutPlan = [
         { type: "Lower Body", tasks: ["Sit-to-Stand: 3x5", "Wall Sit: 2x20s", "Leg Lifts: 2x8"] },
         { type: "Upper Body A", tasks: ["Tube Rows: 3x12", "Tube Shoulder Press: 3x10", "Tube Face Pulls: 3x12"] },
@@ -88,11 +88,32 @@
         { type: "REST DAY", tasks: ["No Gym", "Walk Only", "Sleep Well"] }
     ];
 
-    // Live Workout Plan (Loaded from storage or default)
-    let workoutPlan = JSON.parse(localStorage.getItem('pratik_custom_plan')) || JSON.parse(JSON.stringify(defaultWorkoutPlan));
+    // --- DEFAULT DIET DATA (With your Custom Sunday) ---
+    const defaultStandardDiet = [ "9AM: 50g Sattu + Lemon", "11AM: Lunch (Rotis/Rice + Sabzi)", "2:30PM: Fruit", "6:30PM: Tea (NO BISCUIT)", "8:30PM: 2 Rotis (Dry)" ];
+    
+    const defaultSundayDiet = [ 
+        "10AM: Sattu + Lemon",       // Late Breakfast
+        "1PM: Fruit (Singapuri)",    // Fruit BEFORE Lunch
+        "3PM: Lunch (CHICKEN)",      // Late Lunch
+        "6:30PM: Tea (No Biscuit)",
+        "8:30PM: 2 Rotis (Dry)"
+    ];
 
-    const dietPlan = [ "9AM: 50g Sattu + Lemon", "11AM: Lunch (Rotis/Rice + Sabzi)", "2:30PM: Fruit", "6:30PM: Tea (NO BISCUIT)", "8:30PM: 2 Rotis (Dry)" ];
-    const sundayDiet = [ "9AM: Sattu", "11AM: Lunch (CHICKEN + Less Rice)", "2:30PM: Fruit", "6:30PM: Tea", "8:30PM: 2 Rotis" ];
+    // Create a default array for 7 days
+    const defaultDietWeek = [
+        defaultStandardDiet, // Mon
+        defaultStandardDiet, // Tue
+        defaultStandardDiet, // Wed
+        defaultStandardDiet, // Thu
+        defaultStandardDiet, // Fri
+        defaultStandardDiet, // Sat
+        defaultSundayDiet    // Sun
+    ];
+
+    // --- LOAD STATE OR USE DEFAULT ---
+    let workoutPlan = JSON.parse(localStorage.getItem('pratik_custom_workout')) || JSON.parse(JSON.stringify(defaultWorkoutPlan));
+    let dietPlan = JSON.parse(localStorage.getItem('pratik_custom_diet')) || JSON.parse(JSON.stringify(defaultDietWeek));
+
     const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
     // --- APP LOGIC ---
@@ -127,9 +148,10 @@
 
             let dayName = days[i];
             let wPlan = workoutPlan[i];
-            let dPlan = (dayName === "Sunday") ? sundayDiet : dietPlan;
+            let dPlan = dietPlan[i];
             let cardClass = (dayName === "Sunday") ? "day-card sunday-card" : "day-card";
 
+            // Generate Diet HTML
             let dietHtml = "";
             dPlan.forEach((item, idx) => {
                 let id = storageDateKey + 'diet' + idx;
@@ -139,6 +161,7 @@
                 dietHtml += createCheckbox(id, item, isChecked);
             });
 
+            // Generate Workout HTML
             let workoutHtml = "";
             wPlan.tasks.forEach((item, idx) => {
                 let id = storageDateKey + 'workout' + idx;
@@ -148,10 +171,7 @@
                 workoutHtml += createCheckbox(id, item, isChecked);
             });
 
-            // Edit Button HTML (Only for workouts)
-            let editButton = '<button class="btn-edit" onclick="editWorkout(' + i + ')">Edit</button>';
-            if (dayName === "Sunday") editButton = ""; // No edit needed for Rest Day
-
+            // Add Edit Buttons to BOTH sections
             app.innerHTML += 
                 '<div class="' + cardClass + '">' +
                     '<div class="day-header">' +
@@ -161,12 +181,13 @@
                     
                     '<div class="section-header">' +
                         '<span class="section-title">🍽 Diet</span>' +
+                        '<button class="btn-edit" onclick="editDiet(' + i + ')">Edit</button>' +
                     '</div>' + 
                     dietHtml +
 
                     '<div class="section-header">' +
                         '<span class="section-title" style="color:var(--primary)">🏋 ' + wPlan.type + '</span>' +
-                        editButton +
+                        '<button class="btn-edit" onclick="editWorkout(' + i + ')">Edit</button>' +
                     '</div>' + 
                     workoutHtml +
                 '</div>';
@@ -175,29 +196,40 @@
         updateStats(completedTasks, totalTasks);
     }
 
-    // --- NEW: EDIT WORKOUT FUNCTION ---
+    // --- EDIT FUNCTIONS ---
+    
+    function editDiet(dayIndex) {
+        let currentItems = dietPlan[dayIndex];
+        let newItems = [];
+        
+        // Loop through the 5 meal slots
+        for(let j=0; j<5; j++) {
+            let val = prompt("Meal " + (j+1) + ":", currentItems[j]);
+            if (val === null) return; // Cancelled
+            newItems.push(val);
+        }
+
+        // Save
+        dietPlan[dayIndex] = newItems;
+        localStorage.setItem('pratik_custom_diet', JSON.stringify(dietPlan));
+        renderWeek();
+    }
+
     function editWorkout(dayIndex) {
         let currentTasks = workoutPlan[dayIndex].tasks;
-        
-        // Simple Prompt Loop to update the 3 tasks
-        let newTask1 = prompt("Exercise 1 Name & Reps:", currentTasks[0]);
-        if (newTask1 === null) return; // Cancelled
+        let newTasks = [];
 
-        let newTask2 = prompt("Exercise 2 Name & Reps:", currentTasks[1]);
-        if (newTask2 === null) return;
+        // Loop through the 3 workout slots
+        for(let j=0; j<3; j++) {
+            let val = prompt("Exercise " + (j+1) + ":", currentTasks[j]);
+            if (val === null) return;
+            newTasks.push(val);
+        }
 
-        let newTask3 = prompt("Exercise 3 Name & Reps:", currentTasks[2]);
-        if (newTask3 === null) return;
-
-        // Update the array
-        workoutPlan[dayIndex].tasks = [newTask1, newTask2, newTask3];
-
-        // Save to LocalStorage so it remembers your changes
-        localStorage.setItem('pratik_custom_plan', JSON.stringify(workoutPlan));
-
-        // Re-render
+        // Save
+        workoutPlan[dayIndex].tasks = newTasks;
+        localStorage.setItem('pratik_custom_workout', JSON.stringify(workoutPlan));
         renderWeek();
-        alert("Workout updated! Don't forget to Backup periodically.");
     }
 
     function createCheckbox(id, text, checked) {
@@ -214,7 +246,6 @@
     }
 
     function formatDate(date) {
-        // Updated to include YEAR
         return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
     }
 
@@ -254,10 +285,9 @@
                     localStorage.setItem(key, data[key]);
                 }
                 
-                // Reload custom plan if it exists in the backup
-                if (data['pratik_custom_plan']) {
-                    workoutPlan = JSON.parse(data['pratik_custom_plan']);
-                }
+                // Reload custom plans if they exist
+                if (data['pratik_custom_workout']) workoutPlan = JSON.parse(data['pratik_custom_workout']);
+                if (data['pratik_custom_diet']) dietPlan = JSON.parse(data['pratik_custom_diet']);
 
                 alert('Success! Data loaded.');
                 location.reload(); 
