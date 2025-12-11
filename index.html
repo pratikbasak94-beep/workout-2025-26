@@ -25,8 +25,11 @@
         .day-name { font-weight: bold; }
         .day-date { background: #e0e7ff; color: var(--primary); padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; }
 
-        .section-title { font-size: 0.8rem; text-transform: uppercase; color: #888; margin: 10px 0 5px 0; font-weight: bold; }
-        
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; margin-bottom: 5px; }
+        .section-title { font-size: 0.8rem; text-transform: uppercase; color: #888; font-weight: bold; }
+        .btn-edit { background: none; border: 1px solid #ddd; border-radius: 4px; color: #666; font-size: 0.7rem; cursor: pointer; padding: 2px 6px; }
+        .btn-edit:hover { background: #eee; color: var(--primary); }
+
         /* Checkboxes */
         .checklist-item { display: flex; align-items: center; padding: 6px 0; cursor: pointer; }
         input[type="checkbox"] { width: 18px; height: 18px; margin-right: 10px; accent-color: var(--success); }
@@ -47,7 +50,7 @@
 
 <div class="container">
     <header>
-        <h1>90kg &rarr; 65kg Journey</h1>
+        <h1>Track Your Progress</h1>
         <div class="nav-controls">
             <button class="btn-nav" onclick="changeWeek(-7)">&#8592; Prev</button>
             <span class="current-range" id="week-display">...</span>
@@ -58,8 +61,8 @@
     <div id="tracker-app"></div>
 
     <div class="sync-area">
-        <p style="font-size:0.8rem; color:#666; margin-bottom:10px;">Switching browsers? Save your data here.</p>
-        <button class="btn-backup" onclick="downloadData()">💾 Save My Progress</button>
+        <p style="font-size:0.8rem; color:#666; margin-bottom:10px;">Backup your data (includes your custom workout names)</p>
+        <button class="btn-backup" onclick="downloadData()">💾 Save Progress</button>
         <button class="btn-restore" onclick="triggerUpload()">📂 Load Data</button>
         <input type="file" id="file-input" accept=".json" onchange="loadData(this)">
     </div>
@@ -74,8 +77,8 @@
     const baseDate = new Date(2025, 11, 15); // Dec 15, 2025
     let currentMonday = new Date(baseDate);
 
-    // --- DATA ---
-    const workoutPlan = [
+    // --- DEFAULT DATA (Fallback) ---
+    const defaultWorkoutPlan = [
         { type: "Lower Body", tasks: ["Sit-to-Stand: 3x5", "Wall Sit: 2x20s", "Leg Lifts: 2x8"] },
         { type: "Upper Body A", tasks: ["Tube Rows: 3x12", "Tube Shoulder Press: 3x10", "Tube Face Pulls: 3x12"] },
         { type: "Lower Body", tasks: ["Sit-to-Stand: 3x5", "Wall Sit: 2x20s", "Leg Lifts: 2x8"] },
@@ -85,8 +88,11 @@
         { type: "REST DAY", tasks: ["No Gym", "Walk Only", "Sleep Well"] }
     ];
 
-    const dietPlan = [ "9AM: 50g Sattu + Lemon", "11AM: Lunch (Rotis/Rice + Sabzi)", "2:30PM: Banana", "6:30PM: Tea (NO BISCUIT)", "8:30PM: 2 Rotis (Dry)" ];
-    const sundayDiet = [ "9AM: Sattu", "11AM: Lunch (CHICKEN + Less Rice)", "2:30PM: Banana", "6:30PM: Tea", "8:30PM: 2 Rotis" ];
+    // Live Workout Plan (Loaded from storage or default)
+    let workoutPlan = JSON.parse(localStorage.getItem('pratik_custom_plan')) || JSON.parse(JSON.stringify(defaultWorkoutPlan));
+
+    const dietPlan = [ "9AM: 50g Sattu + Lemon", "11AM: Lunch (Rotis/Rice + Sabzi)", "2:30PM: Fruit", "6:30PM: Tea (NO BISCUIT)", "8:30PM: 2 Rotis (Dry)" ];
+    const sundayDiet = [ "9AM: Sattu", "11AM: Lunch (CHICKEN + Less Rice)", "2:30PM: Fruit", "6:30PM: Tea", "8:30PM: 2 Rotis" ];
     const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
     // --- APP LOGIC ---
@@ -142,18 +148,56 @@
                 workoutHtml += createCheckbox(id, item, isChecked);
             });
 
+            // Edit Button HTML (Only for workouts)
+            let editButton = '<button class="btn-edit" onclick="editWorkout(' + i + ')">Edit</button>';
+            if (dayName === "Sunday") editButton = ""; // No edit needed for Rest Day
+
             app.innerHTML += 
                 '<div class="' + cardClass + '">' +
                     '<div class="day-header">' +
                         '<span class="day-name">' + dayName + '</span>' +
                         '<span class="day-date">' + dateStr + '</span>' +
                     '</div>' +
-                    '<div class="section-title">🍽 Diet</div>' + dietHtml +
-                    '<div class="section-title" style="color:var(--primary)">🏋 ' + wPlan.type + '</div>' + workoutHtml +
+                    
+                    '<div class="section-header">' +
+                        '<span class="section-title">🍽 Diet</span>' +
+                    '</div>' + 
+                    dietHtml +
+
+                    '<div class="section-header">' +
+                        '<span class="section-title" style="color:var(--primary)">🏋 ' + wPlan.type + '</span>' +
+                        editButton +
+                    '</div>' + 
+                    workoutHtml +
                 '</div>';
         }
         
         updateStats(completedTasks, totalTasks);
+    }
+
+    // --- NEW: EDIT WORKOUT FUNCTION ---
+    function editWorkout(dayIndex) {
+        let currentTasks = workoutPlan[dayIndex].tasks;
+        
+        // Simple Prompt Loop to update the 3 tasks
+        let newTask1 = prompt("Exercise 1 Name & Reps:", currentTasks[0]);
+        if (newTask1 === null) return; // Cancelled
+
+        let newTask2 = prompt("Exercise 2 Name & Reps:", currentTasks[1]);
+        if (newTask2 === null) return;
+
+        let newTask3 = prompt("Exercise 3 Name & Reps:", currentTasks[2]);
+        if (newTask3 === null) return;
+
+        // Update the array
+        workoutPlan[dayIndex].tasks = [newTask1, newTask2, newTask3];
+
+        // Save to LocalStorage so it remembers your changes
+        localStorage.setItem('pratik_custom_plan', JSON.stringify(workoutPlan));
+
+        // Re-render
+        renderWeek();
+        alert("Workout updated! Don't forget to Backup periodically.");
     }
 
     function createCheckbox(id, text, checked) {
@@ -170,7 +214,8 @@
     }
 
     function formatDate(date) {
-        return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+        // Updated to include YEAR
+        return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
     }
 
     function updateStats(completed, total) {
@@ -181,17 +226,12 @@
     // --- DATA BACKUP FUNCTIONS ---
 
     function downloadData() {
-        // 1. Get all data from LocalStorage
         const data = JSON.stringify(localStorage);
-        
-        // 2. Create a Blob (File)
         const blob = new Blob([data], {type: 'application/json'});
-        
-        // 3. Create a download link
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'Pratik_Fitness_Data.json'; // The file name
+        a.download = 'Pratik_Fitness_Data.json';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -209,23 +249,25 @@
         reader.onload = function(e) {
             try {
                 const data = JSON.parse(e.target.result);
-                
-                // Clear current data and load new data
                 localStorage.clear();
                 for (let key in data) {
                     localStorage.setItem(key, data[key]);
                 }
                 
-                alert('Success! Data loaded for Pratik.');
-                location.reload(); // Refresh to show new ticks
+                // Reload custom plan if it exists in the backup
+                if (data['pratik_custom_plan']) {
+                    workoutPlan = JSON.parse(data['pratik_custom_plan']);
+                }
+
+                alert('Success! Data loaded.');
+                location.reload(); 
             } catch (err) {
-                alert('Error reading file. Make sure it is the correct JSON file.');
+                alert('Error reading file.');
             }
         };
         reader.readAsText(file);
     }
 
-    // Start
     init();
 
 </script>
