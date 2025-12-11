@@ -1,295 +1,253 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Durga Puja Wishes</title>
-  <!-- Google Fonts for Title and Wishes -->
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700&family=Bree+Serif&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Baloo 2', Arial, sans-serif;
-      margin: 0; padding: 0;
-      background: url('https://www.transparenttextures.com/patterns/flowers.png'),
-                  linear-gradient(135deg, #fffbe7 0%, #ffd6d6 55%, #ffeebb 100%);
-      background-repeat: repeat;
-      min-height: 100vh;
-    }
-    .bg-text {
-      position: fixed; top: 25%; left: 50%;
-      transform: translate(-50%,-50%);
-      font-family: 'Bree Serif', serif;
-      font-size: 8vw;
-      font-weight: bold;
-      color: rgba(210,25,25,0.08);
-      pointer-events: none;
-      z-index: 0; white-space: nowrap;
-      user-select: none;
-      letter-spacing: 2px;
-    }
-    header {
-      font-family: 'Bree Serif', serif;
-      background: linear-gradient(90deg, #d62411 70%, #ebba5d 100%);
-      color: #fff;
-      font-size: 2.1em;
-      text-align: center;
-      padding: 1.1em 0em 1em 0em;
-      border-radius: 0 0 24px 24px;
-      animation: bannerWave 2.6s infinite alternate ease-in-out;
-      letter-spacing: 2.3px;
-      box-shadow: 0px 5px 16px -5px rgba(230, 50, 90, 0.13);
-      z-index: 1; position: relative;
-    }
-    @keyframes bannerWave {
-      0% { letter-spacing: 2.5px; }
-      50% { letter-spacing: 9px; }
-      100% { letter-spacing: 2.5px; }
-    }
-    nav {
-      background: rgba(255,230,230,0.78);
-      padding: 0.7em 0 0.3em 0;
-      display: flex;
-      justify-content: center;
-      gap: 0.6em;
-      flex-wrap: wrap;
-      z-index: 1; position: relative;
-    }
-    nav button {
-      background: linear-gradient(100deg, #ff9900, #fa514c 85%);
-      border: none;
-      color: #fff;
-      padding: 13px 12px 14px 18px;
-      cursor: pointer;
-      font-family: 'Baloo 2', Arial, sans-serif;
-      font-size: 1.12em;
-      border-radius: 23px;
-      font-weight: bold;
-      margin-bottom: 5px;
-      min-width: 147px;
-      max-width: 96vw;
-      box-shadow: 0 5px 14px -6px #ebba5db6;
-      display: flex; align-items: center; gap: 8px;
-      transition: transform 0.18s, box-shadow 0.22s, background 0.21s;
-      outline: none;
-    }
-    nav button:enabled:hover, nav button:enabled:focus {
-      background: #fffbe7;
-      color: #ba181b;
-      transform: scale(1.07);
-      box-shadow: 0 0 16px 7px #ffecb3a0;
-    }
-    nav button:disabled {
-      background-color: #ffcccc;
-      color: #aaa;
-      opacity: 0.6;
-      cursor: not-allowed;
-      box-shadow: none;
-      border: none;
-    }
-    .emoji {
-      font-size: 1.35em;
-      margin-right: 3px;
-      filter: drop-shadow(0 1.5px 0 #fffad1);
-      user-select: none;
-    }
-    main {
-      padding: 2em 1.1em 2.2em 1.1em;
-      text-align: center;
-      background-color: rgba(255,255,255,0.69);
-      border-radius: 16px;
-      max-width: 630px;
-      margin: 2em auto 1em auto;
-      z-index: 1;
-      position: relative;
-      box-shadow: 0 5px 30px -8px #e3953b26;
-    }
-    .day-content {
-      display: none;
-      opacity: 0;
-      transition: opacity 0.55s;
-    }
-    .day-content.active {
-      display: block;
-      opacity: 1;
-      animation: fadeIn 0.7s;
-    }
-    @keyframes fadeIn {
-      0% { opacity: 0; }
-      100% { opacity: 1; }
-    }
-    #welcome {
-      font-size: 1.2em;
-      margin-bottom: 1.2em;
-    }
-    footer {
-      background: linear-gradient(90deg, #ba181b 60%, #fecd3a 100%);
-      color: #fff;
-      text-align: center;
-      padding: 1em;
-      font-weight: bold;
-      position: fixed;
-      bottom: 0; width: 100%; z-index: 88;
-      box-shadow: 0px -3px 12px -2px #d64b6d2a;
-    }
-    /* MOBILE RESPONSIVE */
-    @media (max-width: 700px) {
-      nav {
-        flex-direction: column;
-        align-items: center;
-        gap: 0.35em;
-      }
-      nav button {
-        width: 94vw;
-        max-width: 409px;
-        font-size: 1em;
-      }
-      main {
-        padding: 1em 2vw 1.9em 2vw;
-        max-width: 99vw; min-width: unset;
-        border-radius: 0;
-        font-size: 1.09em;
-      }
-      .bg-text {
-        font-size: 13vw;
-        top: 22%;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>90kg to 65kg Tracker</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --success: #10b981;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 { margin: 0; color: var(--primary); font-size: 1.8rem; }
+        p { color: #666; margin-top: 5px; }
+        .tz-badge { font-size: 0.75rem; background: #e5e7eb; padding: 2px 6px; border-radius: 4px; color: #4b5563; }
+
+        .day-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid var(--primary);
+        }
+
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .day-title { font-weight: bold; font-size: 1.2rem; }
+        .date-badge { background: #e0e7ff; color: var(--primary); padding: 4px 8px; border-radius: 6px; font-size: 0.9rem; font-weight: 600; }
+
+        .section-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            margin: 10px 0 5px 0;
+            font-weight: bold;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .checklist-item:hover { background-color: #f9fafb; }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 15px;
+            cursor: pointer;
+            accent-color: var(--success);
+        }
+
+        /* Strikethrough effect when checked */
+        input[type="checkbox"]:checked + span {
+            text-decoration: line-through;
+            color: #9ca3af;
+        }
+
+        .btn-reset {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 40px;
+        }
+        
+        .sunday-card { border-left-color: #10b981; } /* Green border for Sunday */
+    </style>
 </head>
 <body>
-  <div class="bg-text">Durga Puja</div>
-  <header>Durga Puja Wishes</header>
-  <nav>
-    <button id="btn-mahalaya"><span class="emoji">🪔</span> Mahalaya</button>
-    <button id="btn-panchami"><span class="emoji">🔔</span> Panchami</button>
-    <button id="btn-shashthi"><span class="emoji">🥁</span> Shashthi</button>
-    <button id="btn-saptami"><span class="emoji">🌅</span> Saptami</button>
-    <button id="btn-ashtami"><span class="emoji">🌸</span> Ashtami</button>
-    <button id="btn-navami"><span class="emoji">🎉</span> Navami</button>
-    <button id="btn-dashami"><span class="emoji">🕊</span> Dashami</button>
-  </nav>
-  <main>
-    <div id="welcome"></div>
-    <div id="mahalaya" class="day-content">
-      <h2>Happy Mahalaya!</h2>
-      <p>May the divine blessings of Maa Durga be with you today and always,
-        <span id="name-mahalaya"></span>!</p>
-    </div>
-    <div id="panchami" class="day-content">
-      <h2>Happy Panchami!</h2>
-      <p>May Maa Durga's grace fill your life this Panchami day,
-        <span id="name-panchami"></span>!</p>
-    </div>
-    <div id="shashthi" class="day-content">
-      <h2>Happy Shashthi!</h2>
-      <p>Wishing you strength and happiness on this auspicious day,
-        <span id="name-shashthi"></span>!</p>
-    </div>
-    <div id="saptami" class="day-content">
-      <h2>Happy Saptami!</h2>
-      <p>May Maa Durga bless you with prosperity and joy,
-        <span id="name-saptami"></span>!</p>
-    </div>
-    <div id="ashtami" class="day-content">
-      <h2>Happy Ashtami!</h2>
-      <p>Celebrate the victory of good over evil with love and devotion,
-        <span id="name-ashtami"></span>!</p>
-    </div>
-    <div id="navami" class="day-content">
-      <h2>Happy Navami!</h2>
-      <p>May your life be filled with divine blessings and peace,
-        <span id="name-navami"></span>!</p>
-    </div>
-    <div id="dashami" class="day-content">
-      <h2>Happy Dashami!</h2>
-      <p>Wishing you farewell to negativity and a fresh start,
-        <span id="name-dashami"></span>!</p>
-    </div>
-  </main>
-  <footer>Made by Pratik</footer>
-  <!-- DHAAK MUSIC AUTOPLAY, hidden control -->
-  <audio id="puja-music" src="https://cdn.pixabay.com/audio/2023/10/11/audio_42f98f43eb.mp3" autoplay loop></audio>
-  <!-- JSConfetti via CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/js-confetti@latest/dist/js-confetti.browser.js"></script>
-  <script>
-    const days = {
-      mahalaya: new Date(2025, 8, 21),
-      panchami: new Date(2025, 8, 27),
-      shashthi: new Date(2025, 8, 28),
-      saptami: new Date(2025, 8, 29),
-      ashtami: new Date(2025, 8, 30),
-      navami: new Date(2025, 9, 1),
-      dashami: new Date(2025, 9, 2)
-    };
-    let userName = prompt("Please enter your name for personalized Durga Puja wishes:");
-    if (!userName) userName = "Guest";
-    document.getElementById('welcome').textContent =
-      "Welcome, " + userName + "! Click any festival day for your wishes.";
 
-    // Enable/disable logic
-    function enableButtons() {
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      // Mahalaya: enabled from now till 21 Sep 2025
-      const mahalayaEnd = new Date(2025,8,21); mahalayaEnd.setHours(0,0,0,0);
-      document.getElementById('btn-mahalaya').disabled = today > mahalayaEnd;
-      // Others: only on their date
-      Object.entries(days).forEach(([key, date]) => {
-        date = new Date(date); date.setHours(0,0,0,0);
-        const btn = document.getElementById('btn-' + key);
-        if (key !== 'mahalaya') {
-          btn.disabled = !(today.getFullYear() === date.getFullYear()
-                        && today.getMonth() === date.getMonth()
-                        && today.getDate() === date.getDate());
+<div class="container">
+    <header>
+        <h1>Weight Loss Roadmap</h1>
+        <p>Goal: 90kg &rarr; 65kg <br> <span class="tz-badge">Zone: India Standard Time (IST)</span></p>
+    </header>
+
+    <div id="tracker-app">
+        </div>
+
+    <button class="btn-reset" onclick="resetProgress()">⚠ Reset All Progress</button>
+</div>
+
+<script>
+    // 1. Configuration: Start Date
+    const startYear = 2025;
+    const startMonth = 11; // December
+    const startDay = 15;   
+    
+    // 2. The Routine Data
+    const workoutPlan = [
+        { type: "Lower Body", tasks: ["Sit-to-Stand: 3x5", "Wall Sit: 2x20s", "Leg Lifts: 2x8"] }, // Mon
+        { type: "Upper Body A", tasks: ["Tube Rows: 3x12", "Tube Shoulder Press: 3x10", "Tube Face Pulls: 3x12"] }, // Tue
+        { type: "Lower Body", tasks: ["Sit-to-Stand: 3x5", "Wall Sit: 2x20s", "Leg Lifts: 2x8"] }, // Wed
+        { type: "CHEST DAY", tasks: ["Tube Chest Press: 3x12", "Incline Pushups: 3x5", "Tube Flys: 3x12"] }, // Thu
+        { type: "Lower Body", tasks: ["Sit-to-Stand: 3x5", "Wall Sit: 2x20s", "Leg Lifts: 2x8"] }, // Fri
+        { type: "Upper Body B", tasks: ["Tube Bicep Curls: 3x12", "Tube Tricep Pushdown: 3x12", "Forearm Twists: 3x20s"] }, // Sat
+        { type: "REST DAY", tasks: ["No Gym", "Walk Only", "Sleep Well"] } // Sun
+    ];
+
+    const dietPlan = [
+        "9AM: 50g Sattu + Lemon",
+        "11AM: Lunch (Rotis/Rice + Sabzi)",
+        "2:30PM: Banana (Singapuri)",
+        "6:30PM: Tea (NO BISCUIT)",
+        "8:30PM: 2 Rotis (Dry) + Sabzi"
+    ];
+
+    const sundayDiet = [
+        "9AM: 50g Sattu + Lemon",
+        "11AM: Lunch (CHICKEN + Less Rice)",
+        "2:30PM: Banana",
+        "6:30PM: Tea (No Biscuit)",
+        "8:30PM: 2 Rotis (Dry)"
+    ];
+
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+    // 3. Logic to Render the Page
+    function renderApp() {
+        const app = document.getElementById('tracker-app');
+        app.innerHTML = ''; // Clear existing
+
+        for (let i = 0; i < 7; i++) {
+            // Calculate Date safely for Local Timezone
+            let currentDate = new Date(startYear, startMonth, startDay + i);
+            
+            // Format for India (DD Month YYYY)
+            let dateString = currentDate.toLocaleDateString('en-IN', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+            });
+
+            // Determine Data for the day
+            let dayName = days[i];
+            let wPlan = workoutPlan[i];
+            let dPlan = (dayName === "Sunday") ? sundayDiet : dietPlan;
+            let cardClass = (dayName === "Sunday") ? "day-card sunday-card" : "day-card";
+
+            // --- FIXED SECTION: Using simple '+' for strings (No Backtick Errors) ---
+            
+            // Generate Diet Items HTML
+            let dietHtml = "";
+            dPlan.forEach((item, idx) => {
+                // Using simple quotes to avoid confusion
+                let id = 'day' + i + '_diet' + idx; 
+                dietHtml += createCheckbox(id, item);
+            });
+
+            // Generate Workout Items HTML
+            let workoutHtml = "";
+            wPlan.tasks.forEach((item, idx) => {
+                let id = 'day' + i + '_workout' + idx;
+                workoutHtml += createCheckbox(id, item);
+            });
+
+            // Build the final Card HTML using simple concatenation
+            let html = 
+                '<div class="' + cardClass + '">' +
+                    '<div class="day-header">' +
+                        '<span class="day-title">' + dayName + '</span>' +
+                        '<span class="date-badge">' + dateString + '</span>' +
+                    '</div>' +
+                    
+                    '<div class="section-title">🍽 Diet</div>' +
+                    dietHtml +
+
+                    '<div class="section-title" style="margin-top:15px; color:#2563eb;">🏋 ' + wPlan.type + '</div>' +
+                    workoutHtml +
+                '</div>';
+            
+            app.innerHTML += html;
         }
-      });
+        loadProgress(); // Restore ticks
     }
-    enableButtons();
 
-    // Confetti setup
-    const jsConfetti = new JSConfetti();
+    // Helper to create checkbox HTML
+    function createCheckbox(id, text) {
+        return '<label class="checklist-item">' +
+                '<input type="checkbox" id="' + id + '" onchange="saveProgress(this)">' +
+                '<span>' + text + '</span>' +
+            '</label>';
+    }
 
-    function showDay(dayId) {
-      document.getElementById('welcome').textContent =
-        "Happy " + capitalize(dayId) + ", " + userName + "!";
-      document.querySelectorAll('.day-content').forEach(dc => {
-        dc.classList.remove('active');
-        dc.style.display = 'none';
-      });
-      const active = document.getElementById(dayId);
-      active.style.display = 'block';
-      setTimeout(() => active.classList.add('active'), 10);
-      // Personalize
-      if (document.getElementById("name-" + dayId))
-        document.getElementById("name-" + dayId).textContent = userName;
-      // Confetti time! Use fun party emoji and colors
-      jsConfetti.addConfetti({
-        emojis:['🪔','🥁','🎉','🌸','🔔','🕊','🌺'],
-        confettiRadius: 5,
-        confettiNumber: 70,
-        emojiSize: 42,
-        confettiColors:[
-          "#fa514c","#ff9900","#ffd600","#ba181b","#8c452b","#fdba01"
-        ]
-      });
+    // 4. Local Storage (Save/Load Logic)
+    function saveProgress(checkbox) {
+        localStorage.setItem(checkbox.id, checkbox.checked);
     }
-    function capitalize(str) {
-      return str.charAt(0).toUpperCase() + str.slice(1);
+
+    function loadProgress() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(box => {
+            const saved = localStorage.getItem(box.id);
+            if (saved === 'true') {
+                box.checked = true;
+            }
+        });
     }
-    document.getElementById('btn-mahalaya').onclick = () => showDay('mahalaya');
-    document.getElementById('btn-panchami').onclick = () => showDay('panchami');
-    document.getElementById('btn-shashthi').onclick = () => showDay('shashthi');
-    document.getElementById('btn-saptami').onclick = () => showDay('saptami');
-    document.getElementById('btn-ashtami').onclick = () => showDay('ashtami');
-    document.getElementById('btn-navami').onclick = () => showDay('navami');
-    document.getElementById('btn-dashami').onclick = () => showDay('dashami');
-    // Attempt autoplay music, some browsers may wait for a click
-    window.addEventListener('load', function() {
-      const audio = document.getElementById("puja-music");
-      if(audio) { audio.play().catch(()=>{}); }
-    });
-  </script>
+
+    function resetProgress() {
+        if(confirm("Start a new week? This will uncheck everything.")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+
+    // Run on Load
+    renderApp();
+</script>
+
 </body>
 </html>
-
-
