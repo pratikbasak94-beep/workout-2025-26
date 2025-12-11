@@ -7,7 +7,7 @@
     <style>
         :root { --primary: #2563eb; --bg: #f3f4f6; --card: #ffffff; --text: #1f2937; --success: #10b981; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; }
-        .container { max-width: 600px; margin: 0 auto; padding-bottom: 50px; }
+        .container { max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
         
         /* Header & Navigation */
         header { text-align: center; margin-bottom: 20px; }
@@ -32,6 +32,12 @@
         input[type="checkbox"] { width: 18px; height: 18px; margin-right: 10px; accent-color: var(--success); }
         input[type="checkbox"]:checked + span { text-decoration: line-through; color: #9ca3af; }
 
+        /* Sync Controls */
+        .sync-area { margin-top: 30px; border-top: 2px dashed #ccc; padding-top: 20px; text-align: center; }
+        .btn-backup { background: #4b5563; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 0.9rem; }
+        .btn-restore { background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 0.9rem; }
+        #file-input { display: none; }
+
         /* Stats */
         .stats-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 10px; border-top: 1px solid #eee; text-align: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
         .progress-text { font-size: 0.9rem; font-weight: bold; color: var(--primary); }
@@ -50,6 +56,13 @@
     </header>
 
     <div id="tracker-app"></div>
+
+    <div class="sync-area">
+        <p style="font-size:0.8rem; color:#666; margin-bottom:10px;">Switching browsers? Save your data here.</p>
+        <button class="btn-backup" onclick="downloadData()">💾 Save My Progress</button>
+        <button class="btn-restore" onclick="triggerUpload()">📂 Load Data</button>
+        <input type="file" id="file-input" accept=".json" onchange="loadData(this)">
+    </div>
 </div>
 
 <div class="stats-bar">
@@ -58,22 +71,18 @@
 
 <script>
     // --- CONFIGURATION ---
-    // Start Date: Monday, Dec 15, 2025
-    // Note: Month is 0-indexed (11 = Dec)
-    const baseDate = new Date(2025, 11, 15); 
-    
-    // Track which Monday we are currently viewing (Starts at baseDate)
+    const baseDate = new Date(2025, 11, 15); // Dec 15, 2025
     let currentMonday = new Date(baseDate);
 
     // --- DATA ---
     const workoutPlan = [
-        { type: "Lower Body", tasks: ["Sit-to-Stand: 3x5", "Wall Sit: 2x20s", "Leg Lifts: 2x8"] }, // Mon
-        { type: "Upper Body A", tasks: ["Tube Rows: 3x12", "Tube Shoulder Press: 3x10", "Tube Face Pulls: 3x12"] }, // Tue
-        { type: "Lower Body", tasks: ["Sit-to-Stand: 3x5", "Wall Sit: 2x20s", "Leg Lifts: 2x8"] }, // Wed
-        { type: "CHEST DAY", tasks: ["Tube Chest Press: 3x12", "Incline Pushups: 3x5", "Tube Flys: 3x12"] }, // Thu
-        { type: "Lower Body", tasks: ["Sit-to-Stand: 3x5", "Wall Sit: 2x20s", "Leg Lifts: 2x8"] }, // Fri
-        { type: "Upper Body B", tasks: ["Tube Bicep Curls: 3x12", "Tube Tricep Pushdown: 3x12", "Forearm Twists: 3x20s"] }, // Sat
-        { type: "REST DAY", tasks: ["No Gym", "Walk Only", "Sleep Well"] } // Sun
+        { type: "Lower Body", tasks: ["Sit-to-Stand: 3x5", "Wall Sit: 2x20s", "Leg Lifts: 2x8"] },
+        { type: "Upper Body A", tasks: ["Tube Rows: 3x12", "Tube Shoulder Press: 3x10", "Tube Face Pulls: 3x12"] },
+        { type: "Lower Body", tasks: ["Sit-to-Stand: 3x5", "Wall Sit: 2x20s", "Leg Lifts: 2x8"] },
+        { type: "CHEST DAY", tasks: ["Tube Chest Press: 3x12", "Incline Pushups: 3x5", "Tube Flys: 3x12"] },
+        { type: "Lower Body", tasks: ["Sit-to-Stand: 3x5", "Wall Sit: 2x20s", "Leg Lifts: 2x8"] },
+        { type: "Upper Body B", tasks: ["Tube Bicep Curls: 3x12", "Tube Tricep Pushdown: 3x12", "Forearm Twists: 3x20s"] },
+        { type: "REST DAY", tasks: ["No Gym", "Walk Only", "Sleep Well"] }
     ];
 
     const dietPlan = [ "9AM: 50g Sattu + Lemon", "11AM: Lunch (Rotis/Rice + Sabzi)", "2:30PM: Banana", "6:30PM: Tea (NO BISCUIT)", "8:30PM: 2 Rotis (Dry)" ];
@@ -98,23 +107,16 @@
         let totalTasks = 0;
         let completedTasks = 0;
 
-        // Calculate End of Week for Header
         let sunday = new Date(currentMonday);
         sunday.setDate(currentMonday.getDate() + 6);
         
-        // Update Header Text
         document.getElementById('week-display').innerText = 
             formatDate(currentMonday) + ' - ' + formatDate(sunday);
 
-        // Generate 7 Days
         for (let i = 0; i < 7; i++) {
-            // Calculate specific date for this card
             let cardDate = new Date(currentMonday);
             cardDate.setDate(currentMonday.getDate() + i);
             let dateStr = formatDate(cardDate);
-            
-            // Unique Key for Storage: "YYYY-MM-DD_TaskID"
-            // This ensures every week has its own history!
             let storageDateKey = cardDate.toISOString().split('T')[0]; 
 
             let dayName = days[i];
@@ -122,7 +124,6 @@
             let dPlan = (dayName === "Sunday") ? sundayDiet : dietPlan;
             let cardClass = (dayName === "Sunday") ? "day-card sunday-card" : "day-card";
 
-            // Generate HTML for Diet
             let dietHtml = "";
             dPlan.forEach((item, idx) => {
                 let id = storageDateKey + 'diet' + idx;
@@ -132,7 +133,6 @@
                 dietHtml += createCheckbox(id, item, isChecked);
             });
 
-            // Generate HTML for Workout
             let workoutHtml = "";
             wPlan.tasks.forEach((item, idx) => {
                 let id = storageDateKey + 'workout' + idx;
@@ -142,7 +142,6 @@
                 workoutHtml += createCheckbox(id, item, isChecked);
             });
 
-            // Build Card
             app.innerHTML += 
                 '<div class="' + cardClass + '">' +
                     '<div class="day-header">' +
@@ -167,7 +166,6 @@
 
     function toggleTask(checkbox) {
         localStorage.setItem(checkbox.id, checkbox.checked);
-        // Recalculate stats immediately
         renderWeek(); 
     }
 
@@ -178,6 +176,53 @@
     function updateStats(completed, total) {
         let percent = Math.round((completed / total) * 100);
         document.getElementById('completion-rate').innerText = 'Weekly Progress: ' + percent + '%';
+    }
+
+    // --- DATA BACKUP FUNCTIONS ---
+
+    function downloadData() {
+        // 1. Get all data from LocalStorage
+        const data = JSON.stringify(localStorage);
+        
+        // 2. Create a Blob (File)
+        const blob = new Blob([data], {type: 'application/json'});
+        
+        // 3. Create a download link
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Pratik_Fitness_Data.json'; // The file name
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    function triggerUpload() {
+        document.getElementById('file-input').click();
+    }
+
+    function loadData(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                
+                // Clear current data and load new data
+                localStorage.clear();
+                for (let key in data) {
+                    localStorage.setItem(key, data[key]);
+                }
+                
+                alert('Success! Data loaded for Pratik.');
+                location.reload(); // Refresh to show new ticks
+            } catch (err) {
+                alert('Error reading file. Make sure it is the correct JSON file.');
+            }
+        };
+        reader.readAsText(file);
     }
 
     // Start
