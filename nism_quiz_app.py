@@ -9,6 +9,7 @@ import sqlite3
 import json
 import os
 import threading
+import time  # Required for API cooldowns
 from datetime import datetime
 
 try:
@@ -21,7 +22,14 @@ except ImportError:
 # ─────────────────────────────────────────────
 DB_PATH = "nism_quiz_results.db"
 QUESTIONS_PER_SESSION = 5
-GEMINI_MODEL = "gemini-2.5-flash"
+
+# FIXED: Added 2.5 Flash-Lite as the #1 default for the highest API limits!
+GEMINI_MODELS = [
+    {"label": "Gemini 2.5 Flash Lite (Fastest & Highest Limits)", "id": "gemini-2.5-flash-lite"},
+    {"label": "Gemini 2.5 Flash (Smarter & Fast)",                "id": "gemini-2.5-flash"},
+    {"label": "Gemini 2.0 Flash (Reliable Backup)",               "id": "gemini-2.0-flash"},
+    {"label": "Gemini 2.5 Pro (Strict Limits / Deep Reasoning)",  "id": "gemini-2.5-pro"}
+]
 
 CHAPTERS = [
     {"id": 1,  "title": "Investment Landscape",                     "emoji": "🌐",
@@ -151,7 +159,6 @@ def get_chapter_stats():
 # ─────────────────────────────────────────────
 WORKBOOK_PATH = "workbook.txt"
 
-# Chapter heading markers as they appear in the extracted PDF text
 CHAPTER_MARKERS = {
     1:  "CHAPTER 1: INVESTMENT LANDSCAPE",
     2:  "CHAPTER 2: CONCEPT AND ROLE OF A MUTUAL FUND",
@@ -168,7 +175,6 @@ CHAPTER_MARKERS = {
 
 @st.cache_resource
 def load_workbook():
-    """Load and cache the full workbook text. Returns None if not found."""
     if not os.path.exists(WORKBOOK_PATH):
         return None
     try:
@@ -178,7 +184,6 @@ def load_workbook():
         return None
 
 def get_chapter_text(chapter_id, max_chars=4000):
-    """Extract the relevant chapter section from the workbook."""
     workbook = load_workbook()
     if not workbook:
         return None
@@ -186,26 +191,21 @@ def get_chapter_text(chapter_id, max_chars=4000):
     marker = CHAPTER_MARKERS.get(chapter_id, "").upper()
     next_marker = CHAPTER_MARKERS.get(chapter_id + 1, "").upper()
 
-    # Find start of this chapter
     upper_wb = workbook.upper()
     start = upper_wb.find(marker)
     if start == -1:
         return None
 
-    # Find start of next chapter (to know where this one ends)
     if next_marker:
         end = upper_wb.find(next_marker, start + 100)
         chapter_text = workbook[start:end] if end != -1 else workbook[start:start + 15000]
     else:
         chapter_text = workbook[start:start + 15000]
 
-    # Return middle portion to avoid just headers/TOC — most content-rich part
     if len(chapter_text) > max_chars:
-        # Skip first 500 chars (usually heading/objectives) and take max_chars from there
         chapter_text = chapter_text[500:500 + max_chars]
 
     return chapter_text.strip()
-
 
 # ─────────────────────────────────────────────
 # API — Google Gemini
@@ -215,7 +215,6 @@ def _build_prompt(chapter, previous_topics):
     if previous_topics:
         prev_str = f"\n\nAVOID repeating these topics already covered this session:\n{', '.join(previous_topics)}"
 
-    # Try to get actual workbook text for this chapter
     workbook_text = get_chapter_text(chapter["id"])
     if workbook_text:
         context_section = f"""
@@ -251,11 +250,44 @@ Respond ONLY with valid JSON (no markdown, no backticks):
 }}"""
 
 def _call_gemini(api_key, prompt):
+    """Try selected model first, auto-fallback through others on rate limit."""
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(GEMINI_MODEL)
-    response = model.generate_content(prompt)
-    text = response.text.strip().replace("```json", "").replace("```", "").strip()
-    return json.loads(text)
+
+    selected_id = st.session_state.get("selected_model", GEMINI_MODELS[0]["id"])
+    ordered = [m for m in GEMINI_MODELS if m["id"] == selected_id]
+    ordered += [m for m in GEMINI_MODELS if m["id"] != selected_id]
+
+    last_error = None
+    for m in ordered:
+        try:
+            model = genai.GenerativeModel(m["id"])
+            response = model.generate_content(prompt)
+            
+            # FIXED: Robust JSON extraction in case Gemini adds markdown formatting
+            text = response.text.strip()
+            if text.startswith("```"):
+                text = text.split("\n", 1)[-1]
+                text = text.rsplit("```", 1)[0].strip()
+            
+            result = json.loads(text)
+            
+            if m["id"] != selected_id:
+                st.session_state["active_model_used"] = m["label"]
+            else:
+                st.session_state["active_model_used"] = None
+            return result
+            
+        except Exception as e:
+            err = str(e).lower()
+            # FIXED: Improved error catching and added a cooldown before switching models
+            if "429" in err or "quota" in err or "rate" in err or "exhausted" in err:
+                last_error = f"{m['label']}: rate limited"
+                time.sleep(2) # Give the API a 2-second cooldown to avoid chaining blocks
+                continue
+            else:
+                raise e
+
+    raise Exception(f"All models hit rate limits. Try again in a minute.\nDetails: {last_error}")
 
 def generate_question(chapter, previous_topics):
     api_key = st.session_state.get("api_key", "")
@@ -272,7 +304,6 @@ def generate_question(chapter, previous_topics):
         return None
 
 def _preload_bg(api_key, chapter, previous_topics, store_key):
-    """Runs in background thread — stores result into session_state."""
     if not api_key or genai is None:
         return
     try:
@@ -282,10 +313,8 @@ def _preload_bg(api_key, chapter, previous_topics, store_key):
         pass
 
 def start_preload(chapter, previous_topics, store_key):
-    """Start background preload only if not already started or ready."""
     if store_key in st.session_state:
         return
-    # Mark as started with None so we don't double-start
     st.session_state[store_key] = None
     api_key = st.session_state.get("api_key", "")
     t = threading.Thread(
@@ -451,7 +480,6 @@ def page_home():
         st.markdown("")
 
     st.markdown("### Select a Chapter")
-    api_key = st.session_state.get("api_key", "")
 
     for ch in CHAPTERS:
         ch_stat = stats.get(ch["id"])
@@ -461,20 +489,14 @@ def page_home():
             pct = round((ch_stat["score"] / ch_stat["total"]) * 100)
             score_html = f'<div class="ch-score">{pct_color(pct)} Best: {ch_stat["score"]}/{ch_stat["total"]} ({pct}%) · {ch_stat["attempts"]} attempt(s)</div>'
 
-        # Kick off background preload for Q1 of this chapter
-        pk = preload_key(ch["id"], 1)
-        if api_key:
-            start_preload(ch, [], pk)
-
-        preloaded = st.session_state.get(pk)
-        preload_html = '<div class="preload-badge">⚡ Ready — loads instantly</div>' if preloaded else ""
-
+        # FIXED: Removed the mass preload feature from the home page loop. 
+        # This was the exact cause of the 429 Resource Exhausted errors.
+        
         st.markdown(f"""
         <div class="chapter-card {done_class}">
             <div class="ch-num">Chapter {ch['id']}</div>
             <div class="ch-title">{ch['emoji']} {ch['title']}</div>
             {score_html}
-            {preload_html}
         </div>
         """, unsafe_allow_html=True)
 
@@ -544,7 +566,6 @@ def page_quiz():
     st.progress(((q_num - 1) / QUESTIONS_PER_SESSION))
     st.markdown(f'<p style="font-family:\'DM Mono\',monospace;font-size:11px;color:#5a5a6a;letter-spacing:1px;">QUESTION {q_num} / {QUESTIONS_PER_SESSION} &nbsp;·&nbsp; SCORE {score}</p>', unsafe_allow_html=True)
 
-    # Use preloaded question if available, otherwise fetch
     if st.session_state.current_q is None:
         pk = preload_key(cid, q_num)
         preloaded = st.session_state.get(pk)
@@ -565,7 +586,7 @@ def page_quiz():
 
     q = st.session_state.current_q
 
-    # Preload next question in background while user reads/answers current one
+    # The safe preload: It only generates Q2 while you are reading Q1.
     if q_num < QUESTIONS_PER_SESSION:
         next_pk = preload_key(cid, q_num + 1)
         prev_topics = [sq["topic"] for sq in st.session_state.session_qs] + [q["topic"]]
@@ -806,6 +827,20 @@ def sidebar():
             st.markdown('<div style="color:#4a9a5a;font-family:\'DM Mono\',monospace;font-size:11px">✓ API key set</div>', unsafe_allow_html=True)
 
         st.markdown("---")
+        st.markdown("**Model**")
+        model_labels = [m["label"] for m in GEMINI_MODELS]
+        current_id = st.session_state.get("selected_model", GEMINI_MODELS[0]["id"])
+        current_idx = next((i for i, m in enumerate(GEMINI_MODELS) if m["id"] == current_id), 0)
+        chosen = st.selectbox("Gemini Model", model_labels, index=current_idx, label_visibility="collapsed")
+        chosen_id = next(m["id"] for m in GEMINI_MODELS if m["label"] == chosen)
+        st.session_state.selected_model = chosen_id
+        st.markdown('<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:#5a5a6a">Auto-fallback enabled if rate limited</div>', unsafe_allow_html=True)
+
+        fallback = st.session_state.get("active_model_used")
+        if fallback:
+            st.markdown(f'<div style="color:#d4a843;font-family:\'DM Mono\',monospace;font-size:10px">⚡ Used fallback: {fallback}</div>', unsafe_allow_html=True)
+
+        st.markdown("---")
         st.markdown("**Navigation**")
 
         if st.button("🏠 Home", use_container_width=True):
@@ -830,13 +865,11 @@ def sidebar():
         """, unsafe_allow_html=True)
 
         st.markdown("---")
-        # Workbook status
         wb = load_workbook()
         if wb:
             st.markdown('<div style="color:#4a9a5a;font-family:\'DM Mono\',monospace;font-size:11px">📘 Workbook loaded<br>Questions from actual text</div>', unsafe_allow_html=True)
         else:
             st.markdown('<div style="color:#9a6a2a;font-family:\'DM Mono\',monospace;font-size:11px">⚠️ workbook.txt missing<br>Upload to GitHub repo<br>for workbook-based Qs</div>', unsafe_allow_html=True)
-
 
 # ─────────────────────────────────────────────
 # MAIN
@@ -869,7 +902,6 @@ def main():
         page_history()
     elif page == "review":
         page_review()
-
 
 if __name__ == "__main__":
     main()
