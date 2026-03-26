@@ -10,7 +10,7 @@ import json
 import os
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fpdf import FPDF
 
@@ -23,7 +23,9 @@ except ImportError:
 # CONFIG
 # ─────────────────────────────────────────────
 DB_PATH = "nism_quiz_results.db"
-QUESTIONS_PER_SESSION = 5
+QUESTIONS_PER_SESSION = 10      # Standard questions
+SPECIAL_TEST_QS = 30            # Special test question count
+SPECIAL_TEST_MINS = 36          # 1.2 mins per question (NISM standard)
 
 GEMINI_MODELS = [
     {"label": "Gemini 2.5 Flash Lite (Fastest & Highest Limits)", "id": "gemini-2.5-flash-lite"},
@@ -58,7 +60,7 @@ CHAPTERS = [
 ]
 
 # ─────────────────────────────────────────────
-# PDF GENERATOR CLASS
+# PDF GENERATOR CLASS (CRASH-PROOFED)
 # ─────────────────────────────────────────────
 class StyledPDF(FPDF):
     def header(self):
@@ -82,34 +84,38 @@ def create_pdf_bytes(markdown_text):
     
     for line in lines:
         line = line.strip()
+        # FIX: Strip out invisible non-breaking spaces that crash FPDF
+        line = line.replace('\xa0', ' ').replace('\t', ' ')
         line = line.encode('latin-1', 'replace').decode('latin-1')
 
         if not line:
             pdf.ln(5)
             continue
             
-        if line.startswith("#"):
-            clean_text = line.replace("#", "").strip()
-            pdf.set_font("helvetica", "B", 16)
-            pdf.set_text_color(0, 51, 102)
-            pdf.multi_cell(0, 10, clean_text)
-            pdf.ln(2)
-        elif line.startswith("-") or line.startswith("*"):
-            clean_text = line[1:].replace("**", "").strip()
-            pdf.set_font("helvetica", "", 12)
-            pdf.set_text_color(0, 0, 0)
-            pdf.multi_cell(0, 8, f"?  {clean_text}")
-        else:
-            clean_text = line.replace("**", "")
-            pdf.set_font("helvetica", "", 12)
-            pdf.set_text_color(40, 40, 40)
-            pdf.multi_cell(0, 7, clean_text)
+        # FIX: Shock Absorber (try/except) so one bad string doesn't crash the app
+        try:
+            if line.startswith("#"):
+                clean_text = line.replace("#", "").strip()
+                pdf.set_font("helvetica", "B", 16)
+                pdf.set_text_color(0, 51, 102)
+                pdf.multi_cell(0, 10, clean_text)
+                pdf.ln(2)
+            elif line.startswith("-") or line.startswith("*"):
+                clean_text = line[1:].replace("**", "").strip()
+                pdf.set_font("helvetica", "", 12)
+                pdf.set_text_color(0, 0, 0)
+                pdf.multi_cell(0, 8, f"-  {clean_text}") # Replaced '?' with standard '-' bullet
+            else:
+                clean_text = line.replace("**", "")
+                pdf.set_font("helvetica", "", 12)
+                pdf.set_text_color(40, 40, 40)
+                pdf.multi_cell(0, 7, clean_text)
+        except Exception:
+            # If line is totally unbreakable, silently skip it to protect the PDF
+            pass
             
     return bytes(pdf.output())
 
-# ─────────────────────────────────────────────
-# NEW: PDF EXAM SCORECARD GENERATOR
-# ─────────────────────────────────────────────
 def build_exam_pdf_content(session_id):
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
@@ -131,13 +137,13 @@ def build_exam_pdf_content(session_id):
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
 
-    # Main Title
     pdf.set_font("helvetica", "B", 16)
     pdf.set_text_color(0, 51, 102)
-    pdf.multi_cell(0, 10, "NISM Series V-A — Mock Exam Scorecard", align="C")
+    
+    exam_title = "NISM Series V-A — Special 30-Mark Scorecard" if total == 30 else "NISM Series V-A — Mock Exam Scorecard"
+    pdf.multi_cell(0, 10, exam_title, align="C")
     pdf.ln(5)
 
-    # Score Box Info
     pct = round((score/total)*100)
     pdf.set_font("helvetica", "", 12)
     pdf.set_text_color(40, 40, 40)
@@ -147,61 +153,58 @@ def build_exam_pdf_content(session_id):
     pdf.multi_cell(0, 8, f"Final Score: {score} / {total}  ({pct}%)")
     pdf.ln(10)
 
-    # Iterate through questions
     for i, row in enumerate(rows, 1):
         question, options_json, correct_idx, selected_idx, explanation, topic, is_correct = row
         options = json.loads(options_json)
         result_text = "CORRECT" if is_correct else "INCORRECT"
 
-        # Safely encode special characters for PDF
-        question = question.encode('latin-1', 'replace').decode('latin-1')
-        explanation = explanation.encode('latin-1', 'replace').decode('latin-1')
-        topic = topic.encode('latin-1', 'replace').decode('latin-1')
+        # FIX: Clean strings before PDF rendering
+        question = question.replace('\xa0', ' ').encode('latin-1', 'replace').decode('latin-1')
+        explanation = explanation.replace('\xa0', ' ').encode('latin-1', 'replace').decode('latin-1')
+        topic = topic.replace('\xa0', ' ').encode('latin-1', 'replace').decode('latin-1')
 
-        # Question Header (Colored Green or Red)
-        pdf.set_font("helvetica", "B", 12)
-        if is_correct:
-            pdf.set_text_color(34, 139, 34)  # Green
-        else:
-            pdf.set_text_color(220, 20, 60)  # Red
-        pdf.multi_cell(0, 8, f"Q{i}. [{topic}] — {result_text}")
-
-        # Question Text
-        pdf.set_font("helvetica", "B", 12)
-        pdf.set_text_color(0, 0, 0)
-        pdf.multi_cell(0, 7, question)
-        pdf.ln(3)
-
-        # Options
-        pdf.set_font("helvetica", "", 11)
-        for j, opt in enumerate(options):
-            opt = opt.encode('latin-1', 'replace').decode('latin-1')
-            
-            if j == correct_idx and j == selected_idx:
-                pdf.set_text_color(34, 139, 34) # Green
-                prefix = "-> (YOURS & CORRECT)"
-            elif j == correct_idx:
-                pdf.set_text_color(34, 139, 34) # Green
-                prefix = "-> (CORRECT ANSWER)"
-            elif j == selected_idx:
-                pdf.set_text_color(220, 20, 60) # Red
-                prefix = "-> (YOUR ANSWER)"
+        try:
+            pdf.set_font("helvetica", "B", 12)
+            if is_correct:
+                pdf.set_text_color(34, 139, 34) 
             else:
-                pdf.set_text_color(80, 80, 80)  # Gray
-                prefix = "   "
-                
-            pdf.multi_cell(0, 6, f"{chr(65+j)}. {prefix}  {opt}")
-        
-        pdf.ln(3)
+                pdf.set_text_color(220, 20, 60) 
+            pdf.multi_cell(0, 8, f"Q{i}. [{topic}] — {result_text}")
 
-        # AI Explanation
-        pdf.set_font("helvetica", "I", 11)
-        pdf.set_text_color(100, 100, 100) # Lighter Gray for explanation
-        pdf.multi_cell(0, 6, f"Explanation: {explanation}")
-        pdf.ln(10)
+            pdf.set_font("helvetica", "B", 12)
+            pdf.set_text_color(0, 0, 0)
+            pdf.multi_cell(0, 7, question)
+            pdf.ln(3)
+
+            pdf.set_font("helvetica", "", 11)
+            for j, opt in enumerate(options):
+                opt = opt.replace('\xa0', ' ').encode('latin-1', 'replace').decode('latin-1')
+                
+                if j == correct_idx and j == selected_idx:
+                    pdf.set_text_color(34, 139, 34) 
+                    prefix = "-> (YOURS & CORRECT)"
+                elif j == correct_idx:
+                    pdf.set_text_color(34, 139, 34) 
+                    prefix = "-> (CORRECT ANSWER)"
+                elif j == selected_idx:
+                    pdf.set_text_color(220, 20, 60) 
+                    prefix = "-> (YOUR ANSWER)"
+                else:
+                    pdf.set_text_color(80, 80, 80)  
+                    prefix = "   "
+                    
+                pdf.multi_cell(0, 6, f"{chr(65+j)}. {prefix}  {opt}")
+            
+            pdf.ln(3)
+            pdf.set_font("helvetica", "I", 11)
+            pdf.set_text_color(100, 100, 100) 
+            pdf.multi_cell(0, 6, f"Explanation: {explanation}")
+            pdf.ln(10)
+        except Exception:
+            # Skip corrupted blocks
+            pdf.write(8, "[Error formatting this specific question block]\n\n")
 
     return bytes(pdf.output())
-
 
 # ─────────────────────────────────────────────
 # DATABASE
@@ -301,6 +304,53 @@ def get_chapter_stats():
     except Exception:
         return {}
 
+def build_txt_content(session_id):
+    con = sqlite3.connect(DB_PATH)
+    cur = con.cursor()
+    cur.execute("SELECT chapter, score, total, date FROM sessions WHERE id=?", (session_id,))
+    sess = cur.fetchone()
+    con.close()
+    if not sess:
+        return ""
+
+    ch_id, score, total, date = sess
+    chapter = get_chapter_by_id(ch_id)
+    rows = get_session_questions(session_id)
+
+    lines = []
+    lines.append("=" * 60)
+    lines.append("NISM Series V-A — Mock Quiz Results")
+    lines.append("=" * 60)
+    lines.append(f"Chapter : {ch_id}. {chapter['title']}")
+    lines.append(f"Date    : {date}")
+    lines.append(f"Score   : {score}/{total} ({round((score/total)*100)}%)")
+    lines.append("=" * 60)
+    lines.append("")
+
+    for i, row in enumerate(rows, 1):
+        question, options_json, correct_idx, selected_idx, explanation, topic, is_correct = row
+        options = json.loads(options_json)
+        result = "CORRECT" if is_correct else "INCORRECT"
+        lines.append(f"Q{i}. [{topic}] — {result}")
+        lines.append(question)
+        lines.append("")
+        for j, opt in enumerate(options):
+            if j == correct_idx and j == selected_idx:
+                prefix = "YOUR ANSWER (CORRECT) ->"
+            elif j == correct_idx:
+                prefix = "CORRECT ANSWER         ->"
+            elif j == selected_idx:
+                prefix = "YOUR ANSWER (WRONG)    ->"
+            else:
+                prefix = "                        "
+            lines.append(f"  {chr(65+j)}. {prefix} {opt}")
+        lines.append("")
+        lines.append(f"Explanation: {explanation}")
+        lines.append("")
+        lines.append("-" * 60)
+        lines.append("")
+
+    return "\n".join(lines)
 
 # ─────────────────────────────────────────────
 # WORKBOOK LOADER
@@ -338,11 +388,9 @@ def get_chapter_text(chapter_id, max_chars=4000):
 
     marker = CHAPTER_MARKERS.get(chapter_id, "").upper()
     next_marker = CHAPTER_MARKERS.get(chapter_id + 1, "").upper()
-
     upper_wb = workbook.upper()
     start = upper_wb.find(marker)
-    if start == -1:
-        return None
+    if start == -1: return None
 
     if next_marker:
         end = upper_wb.find(next_marker, start + 100)
@@ -352,13 +400,12 @@ def get_chapter_text(chapter_id, max_chars=4000):
 
     if len(chapter_text) > max_chars:
         chapter_text = chapter_text[500:500 + max_chars]
-
     return chapter_text.strip()
 
 # ─────────────────────────────────────────────
 # API — Google Gemini
 # ─────────────────────────────────────────────
-def _build_prompt(chapter, previous_topics):
+def _build_prompt(chapter, previous_topics, is_special=False):
     prev_str = ""
     if previous_topics:
         prev_str = f"\n\nAVOID repeating these topics already covered this session:\n{', '.join(previous_topics)}"
@@ -367,21 +414,22 @@ def _build_prompt(chapter, previous_topics):
     if workbook_text:
         context_section = f"""
 Use the following ACTUAL TEXT from the NISM Series V-A workbook (November 2025 edition) to base your question on:
-
 --- WORKBOOK EXCERPT (Chapter {chapter['id']}) ---
 {workbook_text}
 --- END EXCERPT ---
-
-Base your question strictly on facts, figures, rules, and concepts present in this excerpt.
-Key topic areas: {chapter['topics']}"""
+Base your question strictly on facts, figures, rules, and concepts present in this excerpt."""
     else:
         context_section = f"\nKey topics in this chapter: {chapter['topics']}"
+
+    diff_str = "- Difficulty: Standard NISM V-A exam level."
+    if is_special:
+        diff_str = "- DIFFICULTY: HARD. Match the official NISM V-A exam standard strictly. Create scenario-based questions, tricky plausible distractors, and require advanced conceptual application."
 
     return f"""You are an expert NISM Series V-A exam question generator. Generate ONE multiple-choice question for Chapter {chapter['id']}: "{chapter['title']}".
 {context_section}{prev_str}
 
 Requirements:
-- Question must test real exam-worthy knowledge from the chapter
+{diff_str}
 - 4 options (A, B, C, D) — exactly one correct answer
 - Include a clear explanation (2-3 sentences)
 - Cover a DIFFERENT specific topic/sub-topic each time
@@ -406,12 +454,10 @@ def _call_gemini_json(api_key, prompt):
         try:
             model = genai.GenerativeModel(m["id"])
             response = model.generate_content(prompt)
-            
             text = response.text.strip()
             if text.startswith("```"):
                 text = text.split("\n", 1)[-1]
                 text = text.rsplit("```", 1)[0].strip()
-            
             result = json.loads(text)
             
             if m["id"] != selected_id:
@@ -419,7 +465,6 @@ def _call_gemini_json(api_key, prompt):
             else:
                 st.session_state["active_model_used"] = None
             return result
-            
         except Exception as e:
             err = str(e).lower()
             if "429" in err or "quota" in err or "rate" in err or "exhausted" in err:
@@ -431,33 +476,30 @@ def _call_gemini_json(api_key, prompt):
 
     raise Exception(f"All models hit rate limits. Try again in a minute.\nDetails: {last_error}")
 
-def generate_question(chapter, previous_topics):
+def generate_question(chapter, previous_topics, is_special=False):
     api_key = st.session_state.get("api_key", "")
-    if not api_key:
-        return None
+    if not api_key: return None
     try:
-        return _call_gemini_json(api_key, _build_prompt(chapter, previous_topics))
+        return _call_gemini_json(api_key, _build_prompt(chapter, previous_topics, is_special))
     except Exception as e:
         st.error(f"Error generating question: {e}")
         return None
 
-def _preload_bg(api_key, chapter, previous_topics, store_key):
-    if not api_key or genai is None:
-        return
+def _preload_bg(api_key, chapter, previous_topics, store_key, is_special):
+    if not api_key or genai is None: return
     try:
-        result = _call_gemini_json(api_key, _build_prompt(chapter, previous_topics))
+        result = _call_gemini_json(api_key, _build_prompt(chapter, previous_topics, is_special))
         st.session_state[store_key] = result
     except Exception:
         pass
 
-def start_preload(chapter, previous_topics, store_key):
-    if store_key in st.session_state:
-        return
+def start_preload(chapter, previous_topics, store_key, is_special=False):
+    if store_key in st.session_state: return
     st.session_state[store_key] = None
     api_key = st.session_state.get("api_key", "")
     t = threading.Thread(
         target=_preload_bg,
-        args=(api_key, chapter, previous_topics, store_key),
+        args=(api_key, chapter, previous_topics, store_key, is_special),
         daemon=True
     )
     t.start()
@@ -470,7 +512,6 @@ def _build_notes_prompt(chapter):
     if workbook_text:
         context_section = f"""
 Use the following ACTUAL TEXT from the NISM Series V-A workbook:
-
 --- WORKBOOK EXCERPT (Chapter {chapter['id']}) ---
 {workbook_text}
 --- END EXCERPT ---"""
@@ -480,7 +521,6 @@ Use the following ACTUAL TEXT from the NISM Series V-A workbook:
     return f"""You are an expert BFSI instructor preparing students for the NISM Series V-A exam.
 Create highly effective, concise revision notes for Chapter {chapter['id']}: "{chapter['title']}".
 {context_section}
-
 Requirements for the notes:
 - Use clear bullet points (-) and sub-headings (#).
 - Bold (**) the most important terms, rules, and formulas.
@@ -496,7 +536,6 @@ def generate_chapter_notes(chapter):
         
     genai.configure(api_key=api_key)
     selected_id = st.session_state.get("selected_model", GEMINI_MODELS[0]["id"])
-    
     ordered = [m for m in GEMINI_MODELS if m["id"] == selected_id]
     ordered += [m for m in GEMINI_MODELS if m["id"] != selected_id]
 
@@ -513,7 +552,6 @@ def generate_chapter_notes(chapter):
             else:
                 st.error(f"Error generating notes: {e}")
                 return None
-                
     st.error("All AI models hit rate limits. Please wait a minute and try again.")
     return None
 
@@ -527,7 +565,8 @@ def pct_color(pct):
 
 def reset_quiz():
     for k in ["quiz_chapter", "current_q", "q_num", "score",
-              "selected", "answered", "session_qs", "session_done"]:
+              "selected", "answered", "session_qs", "session_done", 
+              "is_special_test", "exam_start_time", "exam_end_time"]:
         if k in st.session_state:
             del st.session_state[k]
 
@@ -536,13 +575,14 @@ def reset_quiz():
 # ─────────────────────────────────────────────
 def page_home():
     st.markdown("## Mutual Fund Distributors — Mock Quiz")
-    st.markdown("*5 questions per chapter · No negative marking · 50% to pass*")
+    st.markdown("*10 questions per chapter · No negative marking*")
     st.markdown("---")
 
     stats = get_chapter_stats()
     total_score = sum(v["score"] for v in stats.values())
     total_q = sum(v["total"] for v in stats.values())
     total_sessions = sum(v["attempts"] for v in stats.values())
+    global_pct = round((total_score / total_q) * 100) if total_q else 0
 
     if total_sessions > 0:
         c1, c2, c3 = st.columns(3)
@@ -551,9 +591,18 @@ def page_home():
         with c2:
             st.markdown(f'<div class="stat-box"><div class="stat-val">{len(stats)}/11</div><div class="stat-label">Chapters Attempted</div></div>', unsafe_allow_html=True)
         with c3:
-            pct = round((total_score / total_q) * 100) if total_q else 0
-            st.markdown(f'<div class="stat-box"><div class="stat-val">{pct}%</div><div class="stat-label">Overall Accuracy</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="stat-box"><div class="stat-val">{global_pct}%</div><div class="stat-label">Overall Accuracy</div></div>', unsafe_allow_html=True)
         st.markdown("")
+
+    is_master_unlocked = (total_sessions >= 10 and global_pct >= 75)
+    
+    if is_master_unlocked:
+        st.markdown("""
+        <div style="background:#1e2010;border:1px solid #d4a843;border-radius:5px;padding:12px;margin-bottom:15px;">
+        <span style="color:#d4a843;font-weight:bold;">🏆 ELITE ACCESS UNLOCKED</span><br>
+        <span style="color:#c8c0b0;font-size:14px;">You have maintained a 75%+ average across 10+ exams. The Official NISM 30-Mark Timed Exams are now available for all chapters below!</span>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.markdown("### Select a Chapter")
 
@@ -573,14 +622,29 @@ def page_home():
         </div>
         """, unsafe_allow_html=True)
 
-        if st.button(f"Start Ch {ch['id']}", key=f"start_{ch['id']}"):
-            reset_quiz()
-            st.session_state.quiz_chapter = ch["id"]
-            st.session_state.page = "quiz"
-            st.rerun()
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button(f"Start Standard (10 Qs)", key=f"start_{ch['id']}"):
+                reset_quiz()
+                st.session_state.quiz_chapter = ch["id"]
+                st.session_state.is_special_test = False
+                st.session_state.page = "quiz"
+                st.rerun()
+                
+        with col2:
+            if is_master_unlocked:
+                if st.button(f"⭐ Start Special Exam (30 Qs)", key=f"special_{ch['id']}"):
+                    reset_quiz()
+                    st.session_state.quiz_chapter = ch["id"]
+                    st.session_state.is_special_test = True
+                    st.session_state.page = "quiz"
+                    st.rerun()
 
 def page_quiz():
     cid = st.session_state.get("quiz_chapter")
+    is_special = st.session_state.get("is_special_test", False)
+    target_qs = SPECIAL_TEST_QS if is_special else QUESTIONS_PER_SESSION
+    
     chapter = get_chapter_by_id(cid)
     if not chapter:
         st.session_state.page = "home"
@@ -594,31 +658,51 @@ def page_quiz():
         st.session_state.answered = False
         st.session_state.session_qs = []
         st.session_state.session_done = False
+        
+        if is_special:
+            st.session_state.exam_start_time = datetime.now()
+            st.session_state.exam_end_time = st.session_state.exam_start_time + timedelta(minutes=SPECIAL_TEST_MINS)
+
+    if is_special and not st.session_state.session_done:
+        time_left = st.session_state.exam_end_time - datetime.now()
+        if time_left.total_seconds() <= 0:
+            st.error("⏱️ TIME IS UP! The exam has officially ended.")
+            save_session(cid, st.session_state.score, target_qs, st.session_state.session_qs)
+            st.session_state.session_done = True
+            time.sleep(2)
+            st.rerun()
 
     col_back, col_title = st.columns([1, 5])
     with col_back:
-        if st.button("← Back"):
+        if st.button("← Abandon"):
             reset_quiz()
             st.session_state.page = "home"
             st.rerun()
     with col_title:
-        st.markdown(f"### {chapter['emoji']} {chapter['title']}")
+        title_suffix = " (SPECIAL TIMED EXAM)" if is_special else ""
+        st.markdown(f"### {chapter['emoji']} {chapter['title']}{title_suffix}")
+        
+        if is_special and not st.session_state.session_done:
+            end_str = st.session_state.exam_end_time.strftime("%I:%M %p")
+            st.markdown(f"<div style='color:#d4a843; font-weight:bold;'>⚠️ Exam strictly ends at {end_str}</div>", unsafe_allow_html=True)
 
     if st.session_state.session_done:
         final_score = st.session_state.score
-        pct = round((final_score / QUESTIONS_PER_SESSION) * 100)
+        pct = round((final_score / target_qs) * 100)
         st.markdown("---")
-        st.markdown(f'<div class="stat-box"><div class="stat-val">{final_score}/{QUESTIONS_PER_SESSION}</div><div class="stat-label">Chapter {cid} Complete — {pct}%</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="stat-box"><div class="stat-val">{final_score}/{target_qs}</div><div class="stat-label">Chapter {cid} Complete — {pct}%</div></div>', unsafe_allow_html=True)
         st.markdown("")
-        if pct == 100: st.success("🎯 Perfect score! Excellent preparation.")
-        elif pct >= 80: st.success("Very strong performance. Keep it up!")
-        elif pct >= 60: st.warning("Good effort. Review the missed questions.")
+        if pct >= 80: st.success("🎯 Outstanding performance. You are ready for the real exam.")
+        elif pct >= 60: st.warning("Good effort. Review your missed answers below.")
         else: st.error("Needs more revision on this chapter.")
+        
         c1, c2, c3 = st.columns(3)
         with c1:
             if st.button("🔄 Retry"):
+                st.session_state.q_num = 1
                 reset_quiz()
                 st.session_state.quiz_chapter = cid
+                st.session_state.is_special_test = is_special
                 st.session_state.page = "quiz"
                 st.rerun()
         with c2:
@@ -635,7 +719,7 @@ def page_quiz():
 
     q_num = st.session_state.q_num
     score = st.session_state.score
-    st.progress(((q_num - 1) / QUESTIONS_PER_SESSION))
+    st.progress(((q_num - 1) / target_qs))
 
     if st.session_state.current_q is None:
         pk = preload_key(cid, q_num)
@@ -646,9 +730,9 @@ def page_quiz():
             st.session_state.selected = None
             st.session_state.answered = False
         else:
-            with st.spinner("Generating question..."):
+            with st.spinner("Generating NISM-standard question..."):
                 prev_topics = [q["topic"] for q in st.session_state.session_qs]
-                q_data = generate_question(chapter, prev_topics)
+                q_data = generate_question(chapter, prev_topics, is_special)
                 if q_data is None:
                     return
                 st.session_state.current_q = q_data
@@ -657,14 +741,14 @@ def page_quiz():
 
     q = st.session_state.current_q
 
-    if q_num < QUESTIONS_PER_SESSION:
+    if q_num < target_qs:
         next_pk = preload_key(cid, q_num + 1)
         prev_topics = [sq["topic"] for sq in st.session_state.session_qs] + [q["topic"]]
-        start_preload(chapter, prev_topics, next_pk)
+        start_preload(chapter, prev_topics, next_pk, is_special)
 
     st.markdown(f"""
     <div class="question-box">
-        <div class="q-label">Question {q_num}</div>
+        <div class="q-label">Question {q_num} of {target_qs}</div>
         <div class="q-text">{q['question']}</div>
     </div>
     """, unsafe_allow_html=True)
@@ -711,15 +795,15 @@ def page_quiz():
         </div>
         """, unsafe_allow_html=True)
 
-        btn_label = "See Results →" if q_num >= QUESTIONS_PER_SESSION else "Next Question →"
+        btn_label = "See Results →" if q_num >= target_qs else "Next Question →"
         
         if st.button(btn_label):
-            if q_num < QUESTIONS_PER_SESSION:
+            if q_num < target_qs:
                 st.session_state.q_num += 1
                 st.session_state.current_q = None
                 st.rerun()
             else:
-                save_session(cid, st.session_state.score, QUESTIONS_PER_SESSION, st.session_state.session_qs)
+                save_session(cid, st.session_state.score, target_qs, st.session_state.session_qs)
                 st.session_state.session_done = True
                 st.rerun()
 
@@ -781,12 +865,13 @@ def page_history():
             chapter = get_chapter_by_id(ch_id)
             pct = round((score / total) * 100) if total else 0
             icon = pct_color(pct)
-            ch_name = chapter["title"] if chapter else f"Chapter {ch_id}"
+            
+            ch_name = f"Chapter {ch_id} (SPECIAL EXAM)" if total == 30 else f"Chapter {ch_id}"
 
             col1, col2 = st.columns([4, 1])
             with col1:
                 st.markdown(f"""
-                **{icon} Ch {ch_id}: {ch_name}** &nbsp;·&nbsp;
+                **{icon} {ch_name}** &nbsp;·&nbsp;
                 <span style="color:#d4a843;font-family:'DM Mono',monospace;font-size:13px">{score}/{total} ({pct}%)</span> &nbsp;·&nbsp;
                 <span style="color:#5a5a6a;font-family:'DM Mono',monospace;font-size:11px">{date}</span>
                 """, unsafe_allow_html=True)
@@ -832,7 +917,6 @@ def page_review():
             st.session_state.page = "history"
             st.rerun()
             
-    # 🛠️ NEW FIX: Download Exam History as a beautifully formatted PDF!
     with col2:
         pdf_bytes = build_exam_pdf_content(sid)
         if pdf_bytes:
@@ -945,6 +1029,7 @@ def inject_css():
     .option-line { padding: 6px 0; font-size: 15px; color: #b8b0a0; }
     .option-line.correct-ans { color: #6aba7a; font-weight: 600; }
     .option-line.wrong-ans { color: #ca6a6a; text-decoration: line-through; }
+    div[data-testid="InputInstructions"] { display: none !important; }
     </style>
     """, unsafe_allow_html=True)
 
