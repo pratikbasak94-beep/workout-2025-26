@@ -60,13 +60,13 @@ CHAPTERS = [
 ]
 
 # ─────────────────────────────────────────────
-# PDF GENERATOR CLASS (CRASH-PROOFED)
+# PDF GENERATOR CLASS
 # ─────────────────────────────────────────────
 class StyledPDF(FPDF):
     def header(self):
         self.set_font("helvetica", "B", 10)
         self.set_text_color(100, 100, 100)
-        self.cell(0, 10, "BFSI Academy - Detailed Study Notes", align="R")
+        self.cell(0, 10, "BFSI Academy - Smart Revision Notes", align="R")
         self.ln(15)
 
     def footer(self):
@@ -113,7 +113,7 @@ def create_pdf_bytes(markdown_text):
             
     return bytes(pdf.output())
 
-def build_exam_pdf_content(session_id):
+def build_exam_pdf_content(session_id, username):
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
     cur.execute("SELECT chapter, score, total, date FROM sessions WHERE id=?", (session_id,))
@@ -144,6 +144,9 @@ def build_exam_pdf_content(session_id):
     pct = round((score/total)*100)
     pdf.set_font("helvetica", "", 12)
     pdf.set_text_color(40, 40, 40)
+    
+    # NEW: Prints the student's name on their PDF scorecard!
+    pdf.multi_cell(0, 8, f"Student: {username.upper()}")
     pdf.multi_cell(0, 8, f"Chapter: {ch_id}. {chapter['title']}")
     pdf.multi_cell(0, 8, f"Date: {date}")
     pdf.set_font("helvetica", "B", 12)
@@ -207,9 +210,12 @@ def build_exam_pdf_content(session_id):
 def init_db():
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
+    
+    # Create tables if they don't exist
     cur.execute("""
         CREATE TABLE IF NOT EXISTS sessions (
             id      INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL DEFAULT 'Guest',
             chapter INTEGER NOT NULL,
             score   INTEGER NOT NULL,
             total   INTEGER NOT NULL,
@@ -230,15 +236,22 @@ def init_db():
             FOREIGN KEY (session_id) REFERENCES sessions(id)
         )
     """)
+    
+    # FIX: Upgrade old databases automatically so you don't lose data!
+    cur.execute("PRAGMA table_info(sessions)")
+    columns = [info[1] for info in cur.fetchall()]
+    if "username" not in columns:
+        cur.execute("ALTER TABLE sessions ADD COLUMN username TEXT NOT NULL DEFAULT 'Guest'")
+        
     con.commit()
     con.close()
 
-def save_session(chapter_id, score, total, questions_data):
+def save_session(username, chapter_id, score, total, questions_data):
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
     cur.execute(
-        "INSERT INTO sessions (chapter, score, total, date) VALUES (?, ?, ?, ?)",
-        (chapter_id, score, total, datetime.now().strftime("%d %b %Y, %I:%M %p"))
+        "INSERT INTO sessions (username, chapter, score, total, date) VALUES (?, ?, ?, ?, ?)",
+        (username, chapter_id, score, total, datetime.now().strftime("%d %b %Y, %I:%M %p"))
     )
     session_id = cur.lastrowid
     for q in questions_data:
@@ -260,11 +273,11 @@ def save_session(chapter_id, score, total, questions_data):
     con.close()
     return session_id
 
-def get_all_sessions():
+def get_all_sessions(username):
     try:
         con = sqlite3.connect(DB_PATH)
         cur = con.cursor()
-        cur.execute("SELECT id, chapter, score, total, date FROM sessions ORDER BY id DESC")
+        cur.execute("SELECT id, chapter, score, total, date FROM sessions WHERE username = ? ORDER BY id DESC", (username,))
         rows = cur.fetchall()
         con.close()
         return rows
@@ -285,14 +298,14 @@ def get_session_questions(session_id):
     except Exception:
         return []
 
-def get_chapter_stats():
+def get_chapter_stats(username):
     try:
         con = sqlite3.connect(DB_PATH)
         cur = con.cursor()
         cur.execute("""
             SELECT chapter, COUNT(*) as attempts, SUM(score) as total_score, SUM(total) as total_q
-            FROM sessions GROUP BY chapter
-        """)
+            FROM sessions WHERE username = ? GROUP BY chapter
+        """, (username,))
         rows = cur.fetchall()
         con.close()
         return {r[0]: {"attempts": r[1], "score": r[2], "total": r[3]} for r in rows}
@@ -328,7 +341,7 @@ def load_workbook():
     except Exception:
         return None
 
-def get_chapter_text(chapter_id, max_chars=12000): # 🛠️ INCREASED: Reads way more text now!
+def get_chapter_text(chapter_id, max_chars=12000): 
     workbook = load_workbook()
     if not workbook:
         return None
@@ -454,11 +467,8 @@ def start_preload(chapter, previous_topics, store_key, is_special=False):
 def preload_key(ch_id, q_num):
     return f"preload_ch{ch_id}_q{q_num}"
 
-# ─────────────────────────────────────────────
-# 🛠️ NEW: DEEP STUDY NOTES PROMPT
-# ─────────────────────────────────────────────
 def _build_notes_prompt(chapter):
-    workbook_text = get_chapter_text(chapter["id"], max_chars=12000) # Give it way more context to read
+    workbook_text = get_chapter_text(chapter["id"], max_chars=12000) 
     if workbook_text:
         context_section = f"""
 Use the following ACTUAL TEXT from the NISM Series V-A workbook:
@@ -526,12 +536,33 @@ def reset_quiz():
 # ─────────────────────────────────────────────
 # PAGES
 # ─────────────────────────────────────────────
+# NEW: LOGIN PAGE
+def page_login():
+    st.markdown("## 🔐 Welcome to BFSI Academy")
+    st.markdown("Enter your Name or Access Code to track your progress and unlock Special Exams.")
+    
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        username_input = st.text_input("Username / Access Code", key="login_input")
+        if st.button("Access Academy", use_container_width=True):
+            if username_input.strip():
+                st.session_state.username = username_input.strip()
+                st.session_state.page = "home"
+                st.rerun()
+            else:
+                st.error("Please enter a valid name.")
+                
+    st.markdown("---")
+    st.markdown("*Note: Progress is saved uniquely to the name you enter here.*")
+
 def page_home():
-    st.markdown("## Mutual Fund Distributors — Mock Quiz")
+    username = st.session_state.username
+    st.markdown(f"## Welcome back, {username} 👋")
     st.markdown("*10 questions per chapter · No negative marking*")
     st.markdown("---")
 
-    stats = get_chapter_stats()
+    # Pass the username to only get YOUR stats
+    stats = get_chapter_stats(username)
     total_score = sum(v["score"] for v in stats.values())
     total_q = sum(v["total"] for v in stats.values())
     total_sessions = sum(v["attempts"] for v in stats.values())
@@ -595,6 +626,7 @@ def page_home():
 
 def page_quiz():
     cid = st.session_state.get("quiz_chapter")
+    username = st.session_state.username
     is_special = st.session_state.get("is_special_test", False)
     target_qs = SPECIAL_TEST_QS if is_special else QUESTIONS_PER_SESSION
     
@@ -620,7 +652,7 @@ def page_quiz():
         time_left = st.session_state.exam_end_time - datetime.now()
         if time_left.total_seconds() <= 0:
             st.error("⏱️ TIME IS UP! The exam has officially ended.")
-            save_session(cid, st.session_state.score, target_qs, st.session_state.session_qs)
+            save_session(username, cid, st.session_state.score, target_qs, st.session_state.session_qs)
             st.session_state.session_done = True
             time.sleep(2)
             st.rerun()
@@ -756,7 +788,7 @@ def page_quiz():
                 st.session_state.current_q = None
                 st.rerun()
             else:
-                save_session(cid, st.session_state.score, target_qs, st.session_state.session_qs)
+                save_session(username, cid, st.session_state.score, target_qs, st.session_state.session_qs)
                 st.session_state.session_done = True
                 st.rerun()
 
@@ -807,9 +839,11 @@ def page_history():
         st.session_state.page = "home"
         st.rerun()
 
-    sessions = get_all_sessions()
+    username = st.session_state.username
+    sessions = get_all_sessions(username)
+    
     if not sessions:
-        st.info("No exam sessions saved yet. Complete a chapter quiz to see your history here.")
+        st.info("No exam sessions saved yet for this profile.")
         return
 
     for sess in sessions:
@@ -871,9 +905,10 @@ def page_review():
             st.rerun()
             
     with col2:
-        pdf_bytes = build_exam_pdf_content(sid)
+        username = st.session_state.username
+        pdf_bytes = build_exam_pdf_content(sid, username)
         if pdf_bytes:
-            fname = f"NISM_QuizScorecard_Ch{ch_id}_{date.replace(' ','_').replace(',','').replace(':','')}.pdf"
+            fname = f"NISM_QuizScorecard_{username}_Ch{ch_id}_{date.replace(' ','_').replace(',','').replace(':','')}.pdf"
             st.download_button(label="📄 Download Exam PDF", data=pdf_bytes, file_name=fname, mime="application/pdf")
         else:
             st.error("Missing FPDF Engine.")
@@ -926,9 +961,16 @@ def page_review():
 # ─────────────────────────────────────────────
 def sidebar():
     with st.sidebar:
-        st.markdown("### Settings")
-        st.markdown("---")
+        # NEW: Display Logged-in User Profile
+        if "username" in st.session_state:
+            st.markdown(f"👤 **Profile:** {st.session_state.username}")
+            if st.button("Logout", key="logout_btn", size="small"):
+                del st.session_state["username"]
+                st.session_state.page = "login"
+                st.rerun()
+            st.markdown("---")
 
+        st.markdown("### Settings")
         api_key = st.text_input(
             "Gemini API Key",
             value=st.session_state.get("api_key", ""),
@@ -943,21 +985,23 @@ def sidebar():
         chosen = st.selectbox("Gemini Model", model_labels, index=current_idx)
         st.session_state.selected_model = next(m["id"] for m in GEMINI_MODELS if m["label"] == chosen)
 
-        st.markdown("---")
-        if st.button("🏠 Home", use_container_width=True):
-            reset_quiz()
-            st.session_state.page = "home"
-            st.rerun()
+        # Hide navigation buttons if not logged in
+        if "username" in st.session_state:
+            st.markdown("---")
+            if st.button("🏠 Home", use_container_width=True):
+                reset_quiz()
+                st.session_state.page = "home"
+                st.rerun()
 
-        if st.button("📝 PDF Notes Generator", use_container_width=True):
-            reset_quiz()
-            st.session_state.page = "notes"
-            st.rerun()
+            if st.button("📝 PDF Notes Generator", use_container_width=True):
+                reset_quiz()
+                st.session_state.page = "notes"
+                st.rerun()
 
-        if st.button("📊 History", use_container_width=True):
-            reset_quiz()
-            st.session_state.page = "history"
-            st.rerun()
+            if st.button("📊 History", use_container_width=True):
+                reset_quiz()
+                st.session_state.page = "history"
+                st.rerun()
 
 def inject_css():
     st.markdown("""
@@ -994,14 +1038,18 @@ def main():
     init_db()
     inject_css()
 
-    if "page" not in st.session_state:
-        st.session_state.page = "home"
     if "api_key" not in st.session_state:
         st.session_state.api_key = os.environ.get("GEMINI_API_KEY", "")
 
+    # Force Login Screen if username is missing
+    if "username" not in st.session_state:
+        st.session_state.page = "login"
+
     sidebar()
 
-    if st.session_state.page == "home":
+    if st.session_state.page == "login":
+        page_login()
+    elif st.session_state.page == "home":
         page_home()
     elif st.session_state.page == "quiz":
         page_quiz()
