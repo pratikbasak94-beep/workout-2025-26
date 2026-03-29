@@ -58,7 +58,8 @@ CHAPTERS = [
      "topics": "types of risk (systematic vs unsystematic, market/credit/liquidity/interest rate/concentration/reinvestment risk), modified duration and interest rate risk, credit rating and credit risk, portfolio diversification, drivers of return in equity and debt funds, measures of return (absolute return, annualised return, CAGR, XIRR, rolling returns, trailing returns), SEBI norms on return representation, standard deviation, beta, Sharpe ratio, Sortino ratio, Treynor ratio, alpha, R-squared, maximum drawdown, credit risk provisions, side pocketing"},
     {"id": 11, "title": "Mutual Fund Scheme Performance", "emoji": "🎯",
      "topics": "benchmarks and their importance, Price Return Index (PRI) vs Total Return Index (TRI), SEBI mandate for TRI benchmarks, choosing appropriate benchmark, benchmarks for equity schemes (Nifty 50 TRI, BSE Sensex TRI, Nifty Midcap 150 TRI), benchmarks for debt schemes (CRISIL indices, Nifty indices), benchmarks for hybrid and other schemes, quantitative measures of fund manager performance (alpha, information ratio, Jensen alpha), tracking error definition and calculation, tracking error importance for index funds and ETFs, scheme performance disclosure rules"},
-]
+{"id": 12, "title": "Mutual Fund Scheme Selection", "emoji": "🎯",
+     "topics": "scheme selection based on investor needs/risk profile, risk-return hierarchy of fund categories, active vs passive funds, diversified vs sector/thematic funds, evaluating fund performance (age, size, turnover, expenses), selecting between AMCs and options, growth vs value investment strategies"}]
 
 # ─────────────────────────────────────────────
 # PDF GENERATOR CLASS
