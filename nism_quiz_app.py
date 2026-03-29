@@ -464,8 +464,9 @@ def start_preload(chapter, previous_topics, store_key, is_special=False):
 def preload_key(ch_id, q_num):
     return f"preload_ch{ch_id}_q{q_num}"
 
+# --- NEW UPDATED ANTI-SKELETON PROMPT ENGINE ---
 def _build_notes_prompt(chapter):
-    workbook_text = get_chapter_text(chapter["id"], max_chars=12000) 
+    workbook_text = get_chapter_text(chapter["id"], max_chars=15000) 
     if workbook_text:
         context_section = f"""
 Use the following ACTUAL TEXT from the NISM Series V-A workbook:
@@ -473,19 +474,19 @@ Use the following ACTUAL TEXT from the NISM Series V-A workbook:
 {workbook_text}
 --- END EXCERPT ---"""
     else:
-        context_section = f"\nKey topics to cover: {chapter['topics']}"
+        context_section = f"\nKey topics that MUST be fully defined and explained: {chapter['topics']}"
 
-    return f"""You are an expert BFSI instructor preparing comprehensive, detailed STUDY MATERIAL for the NISM Series V-A exam.
-Create deep, explanatory study notes for Chapter {chapter['id']}: "{chapter['title']}".
+    return f"""You are a master Indian financial instructor writing the ultimate, comprehensive study guide for the NISM Series V-A exam.
+Write an exhaustive, highly detailed textbook-style chapter for Chapter {chapter['id']}: "{chapter['title']}".
 {context_section}
 
-CRITICAL REQUIREMENTS:
-- DO NOT create short revision summaries. You must explain the concepts deeply so a beginner can study and learn directly from this text.
-- DO NOT leave bullet points empty or just list topics.
-- You MUST extract and state every specific fact, tax rate (e.g., STCG 20%, LTCG 12.5%), SEBI regulation, and time limit mentioned in the text. Provide the context for each number.
-- Use clear sub-headings (#) and bullet points (-).
-- Bold (**) the most important terms, rules, and numbers.
-- Format strictly as readable text/markdown. Do NOT output JSON.
+CRITICAL INSTRUCTIONS TO PREVENT EMPTY SECTIONS:
+1. EXPLAIN EVERY CONCEPT: You must write at least one full, detailed paragraph (3-5 sentences minimum) explaining EVERY SINGLE TOPIC mentioned in the context. 
+2. NO SKELETON LISTS: Do NOT just write a heading like "Systematic Risk:" and leave it blank. You MUST define it, provide a real-world financial example, and explain its relevance to mutual funds.
+3. NISM EXAM FOCUS: Extract and state specific SEBI rules, exact tax percentages, cutoff times, limits, and formulas where applicable.
+4. FORMATTING: Use clean Markdown headings (##). Use bullet points (-) ONLY when listing features beneath a fully written paragraph. 
+5. BOLDING: Bold (**) key financial terms, percentages, and regulations so the student can memorize them easily.
+6. The student is relying entirely on this text to pass a difficult regulatory exam. Be incredibly thorough and do not skip definitions.
 """
 
 def generate_chapter_notes(chapter):
@@ -810,7 +811,6 @@ def page_notes():
                     st.session_state.notes_pdf_bytes = create_pdf_bytes(notes_text)
                     st.rerun()
 
-    # The PDF download button appears once notes are generated
     if "current_notes" in st.session_state and "notes_pdf_bytes" in st.session_state:
         with col2:
             st.success("✅ Notes ready for download.")
