@@ -23,39 +23,38 @@ except ImportError:
 # CONFIG
 # ─────────────────────────────────────────────
 DB_PATH = "nism_quiz_results.db"
-QUESTIONS_PER_SESSION = 10      # Standard questions
-SPECIAL_TEST_QS = 30            # Special test question count
-SPECIAL_TEST_MINS = 36          # 1.2 mins per question (NISM standard)
+QUESTIONS_PER_SESSION = 10      
+SPECIAL_TEST_QS = 30            
+SPECIAL_TEST_MINS = 36          
 
+# FIXED: Reverted strictly to 1.5 models to bypass the "Limit: 0" Free Tier Error
 GEMINI_MODELS = [
-    {"label": "Gemini 2.5 Flash Lite (Fastest & Highest Limits)", "id": "gemini-2.5-flash-lite"},
-    {"label": "Gemini 2.5 Flash (Smarter & Fast)",                "id": "gemini-2.5-flash"},
-    {"label": "Gemini 2.0 Flash (Reliable Backup)",               "id": "gemini-2.0-flash"},
-    {"label": "Gemini 2.5 Pro (Strict Limits / Deep Reasoning)",  "id": "gemini-2.5-pro"}
+    {"label": "Gemini 1.5 Flash (Fastest & Free)", "id": "gemini-1.5-flash"},
+    {"label": "Gemini 1.5 Pro (Deep Reasoning)",  "id": "gemini-1.5-pro"}
 ]
 
 CHAPTERS = [
-    {"id": 1,  "title": "Investment Landscape",                     "emoji": "🌐",
+    {"id": 1,  "title": "Investment Landscape", "emoji": "🌐",
      "topics": "financial goals, savings vs investment, asset classes (equity/debt/real estate/commodities/gold), investment risks (market/credit/liquidity/inflation/interest rate), risk measures (standard deviation, beta, VaR), behavioural biases (anchoring, recency, herding, confirmation, mental accounting, overconfidence, loss aversion, endowment effect), risk profiling, asset allocation strategies, do-it-yourself vs professional help"},
-    {"id": 2,  "title": "Concept & Role of a Mutual Fund",          "emoji": "🏦",
+    {"id": 2,  "title": "Concept & Role of a Mutual Fund", "emoji": "🏦",
      "topics": "mutual fund definition and concept, pooling of funds, NAV, diversification, professional management, types by structure (open-ended, close-ended, interval), by asset class (equity, debt, hybrid, solution-oriented), sub-categories of equity (large cap, mid cap, small cap, multi cap, flexi cap, ELSS, sectoral, thematic, index, ETF), debt categories (liquid, overnight, ultra short, short/medium/long duration, dynamic bond, gilt, credit risk, corporate bond), hybrid categories (conservative, balanced, aggressive, dynamic asset allocation, multi-asset, arbitrage), growth of MF industry in India, AUM trends, SIP"},
-    {"id": 3,  "title": "Legal Structure of Mutual Funds",          "emoji": "⚖️",
+    {"id": 3,  "title": "Legal Structure of Mutual Funds", "emoji": "⚖️",
      "topics": "three-tier structure (sponsor, trust/trustees, AMC), role of sponsor, trust deed, role of trustees, obligations of trustees, AMC registration, role of AMC, restrictions on AMC, service providers: RTA, custodian, depository, auditors, fund accountants, role and function of AMFI, AMFI code of conduct, AMFI Registration Number (ARN), organization structure of AMC"},
-    {"id": 4,  "title": "Legal & Regulatory Framework",             "emoji": "📋",
+    {"id": 4,  "title": "Legal & Regulatory Framework", "emoji": "📋",
      "topics": "SEBI Act 1992, SEBI (Mutual Funds) Regulations 1996, SEBI regulatory role, AMFI, RBI role for liquid funds, stock exchange listing of close-ended funds, SEBI circulars and guidelines, scheme categorization and rationalization, investor grievance redressal mechanism, SCORES platform, SEBI Ombudsman, due diligence by AMCs for distributors, AMFI code of conduct for intermediaries, risk-o-meter, side pocketing rules, swing pricing, segregated portfolio"},
-    {"id": 5,  "title": "Scheme Related Information",               "emoji": "📄",
+    {"id": 5,  "title": "Scheme Related Information", "emoji": "📄",
      "topics": "Scheme Information Document (SID), Statement of Additional Information (SAI), Key Information Memorandum (KIM), addendum, contents of SID, investment objective, asset allocation pattern, investment strategies, risk factors, benchmark, fund manager details, expense ratio disclosure, load structure, SID filing with SEBI, product labelling, risk-o-meter, potential risk class matrix for debt funds"},
-    {"id": 6,  "title": "Fund Distribution & Channel Management",   "emoji": "📊",
+    {"id": 6,  "title": "Fund Distribution & Channel Management", "emoji": "📊",
      "topics": "role of mutual fund distributor, individual vs institutional distributors, banks as distributors, online platforms, MFD vs RIA, direct plan vs regular plan, ARN registration, EUIN, AMFI certification, trail commission vs upfront commission, TER limits, commission disclosure by SEBI, due diligence by AMC, distributor empanelment, change of distributor, nomination facility for distributors, difference between distributor and investment adviser, execution-only platform (EOP)"},
-    {"id": 7,  "title": "NAV, TER & Pricing of Units",              "emoji": "🔢",
+    {"id": 7,  "title": "NAV, TER & Pricing of Units", "emoji": "🔢",
      "topics": "fair valuation principles, mark-to-market valuation, amortization of debt securities, valuation of non-traded securities, NAV calculation formula (assets minus liabilities divided by units), accrual of income and expenses, NAV computation frequency, declaration of NAV, Total Expense Ratio (TER) components, TER limits for equity and debt schemes, daily TER disclosure, entry load (abolished), exit load, impact of exit load on NAV, accounting standards for mutual funds, annual report and financial statements, segregated portfolio NAV and TER"},
-    {"id": 8,  "title": "Taxation",                                 "emoji": "💰",
+    {"id": 8,  "title": "Taxation", "emoji": "💰",
      "topics": "capital gains taxation for equity funds (LTCG above Rs 1.25 lakh at 12.5%, STCG at 20%), capital gains for debt funds (taxed as per income slab after April 2023), IDCW taxed as income, DDT abolished, stamp duty on purchase at 0.005%, setting off capital gains and losses, STT on equity fund redemptions, ELSS tax benefit under Section 80C up to Rs 1.5 lakh, TDS on capital gains for NRI investors, GST on AMC fees, indexation benefit removed for debt funds after 2023 Finance Act"},
-    {"id": 9,  "title": "Investor Services",                        "emoji": "🧾",
+    {"id": 9,  "title": "Investor Services", "emoji": "🧾",
      "topics": "NFO process, NFO price Rs 10, ongoing NAV-based pricing, SIP (Systematic Investment Plan), SWP (Systematic Withdrawal Plan), STP (Systematic Transfer Plan), growth option vs IDCW option, dividend payout vs dividend reinvestment, folio number, account statement (CAS), KYC process (CKYC, in-person verification), PAN requirement, minor investors, NRI investors, joint holding, nomination, filling application form, redemption process, cut-off times (liquid fund 1:30 PM, other funds 3 PM), time stamping, turnaround times (T+3 for redemption), SIP registration, SIP auto-debit, switch transaction, transmission of units"},
-    {"id": 10, "title": "Risk, Return & Performance of Funds",      "emoji": "📈",
+    {"id": 10, "title": "Risk, Return & Performance of Funds", "emoji": "📈",
      "topics": "types of risk (systematic vs unsystematic, market/credit/liquidity/interest rate/concentration/reinvestment risk), modified duration and interest rate risk, credit rating and credit risk, portfolio diversification, drivers of return in equity and debt funds, measures of return (absolute return, annualised return, CAGR, XIRR, rolling returns, trailing returns), SEBI norms on return representation, standard deviation, beta, Sharpe ratio, Sortino ratio, Treynor ratio, alpha, R-squared, maximum drawdown, credit risk provisions, side pocketing"},
-    {"id": 11, "title": "Mutual Fund Scheme Performance",           "emoji": "🎯",
+    {"id": 11, "title": "Mutual Fund Scheme Performance", "emoji": "🎯",
      "topics": "benchmarks and their importance, Price Return Index (PRI) vs Total Return Index (TRI), SEBI mandate for TRI benchmarks, choosing appropriate benchmark, benchmarks for equity schemes (Nifty 50 TRI, BSE Sensex TRI, Nifty Midcap 150 TRI), benchmarks for debt schemes (CRISIL indices, Nifty indices), benchmarks for hybrid and other schemes, quantitative measures of fund manager performance (alpha, information ratio, Jensen alpha), tracking error definition and calculation, tracking error importance for index funds and ETFs, scheme performance disclosure rules"},
 ]
 
@@ -80,7 +79,9 @@ def create_pdf_bytes(markdown_text):
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
     
-    lines = markdown_text.split('\n')
+    # FIXED: Added more string replacements to prevent FPDF crashing on long markdown strings
+    clean_markdown = markdown_text.replace('---', '').replace('***', '').replace('___', '')
+    lines = clean_markdown.split('\n')
     
     for line in lines:
         line = line.strip()
@@ -464,30 +465,30 @@ def start_preload(chapter, previous_topics, store_key, is_special=False):
 def preload_key(ch_id, q_num):
     return f"preload_ch{ch_id}_q{q_num}"
 
-# --- NEW UPDATED ANTI-SKELETON PROMPT ENGINE ---
+# ─────────────────────────────────────────────
+# FIXED: MILITARY-GRADE ANTI-SKELETON PROMPT
+# ─────────────────────────────────────────────
 def _build_notes_prompt(chapter):
     workbook_text = get_chapter_text(chapter["id"], max_chars=15000) 
     if workbook_text:
-        context_section = f"""
-Use the following ACTUAL TEXT from the NISM Series V-A workbook:
---- WORKBOOK EXCERPT (Chapter {chapter['id']}) ---
-{workbook_text}
---- END EXCERPT ---"""
+        context_section = f"--- WORKBOOK TEXT EXCERPT ---\n{workbook_text}\n--- END EXCERPT ---"
     else:
-        context_section = f"\nKey topics that MUST be fully defined and explained: {chapter['topics']}"
+        context_section = f"MANDATORY TOPICS TO COVER:\n{chapter['topics']}"
 
-    return f"""You are a master Indian financial instructor writing the ultimate, comprehensive study guide for the NISM Series V-A exam.
-Write an exhaustive, highly detailed textbook-style chapter for Chapter {chapter['id']}: "{chapter['title']}".
+    return f"""You are a master Indian financial instructor writing a highly detailed textbook chapter for the NISM Series V-A exam.
+You are writing Chapter {chapter['id']}: "{chapter['title']}".
+
+Context to use:
 {context_section}
 
-CRITICAL INSTRUCTIONS TO PREVENT EMPTY SECTIONS:
-1. EXPLAIN EVERY CONCEPT: You must write at least one full, detailed paragraph (3-5 sentences minimum) explaining EVERY SINGLE TOPIC mentioned in the context. 
-2. NO SKELETON LISTS: Do NOT just write a heading like "Systematic Risk:" and leave it blank. You MUST define it, provide a real-world financial example, and explain its relevance to mutual funds.
-3. NISM EXAM FOCUS: Extract and state specific SEBI rules, exact tax percentages, cutoff times, limits, and formulas where applicable.
-4. FORMATTING: Use clean Markdown headings (##). Use bullet points (-) ONLY when listing features beneath a fully written paragraph. 
-5. BOLDING: Bold (**) key financial terms, percentages, and regulations so the student can memorize them easily.
-6. The student is relying entirely on this text to pass a difficult regulatory exam. Be incredibly thorough and do not skip definitions.
-"""
+CRITICAL RULES - READ CAREFULLY:
+1. WRITE FULL PARAGRAPHS: For EVERY single topic listed above, you MUST write a minimum of a 4-sentence paragraph explaining what it is, how it works in the real world, and a financial example.
+2. NO BLANK HEADINGS: You are strictly forbidden from writing a heading and leaving it blank. Every heading must be followed by dense, explanatory text.
+3. NO LAZY LISTS: Do not just list terms like "Systematic Risk" and skip to the next line. You must explain it deeply so a beginner can pass a regulatory exam.
+4. Extract exact SEBI rules, tax percentages, and cutoff times if applicable.
+5. Format with Markdown headings (##) and bold text (**) for key terms.
+
+Begin writing the comprehensive, dense textbook chapter now. Do not skip any topics."""
 
 def generate_chapter_notes(chapter):
     api_key = st.session_state.get("api_key", "")
@@ -789,8 +790,8 @@ def page_quiz():
                 st.rerun()
 
 def page_notes():
-    st.markdown("## 📝 Live Study Notes Generator")
-    st.markdown("*Use Gemini to analyze textbook chapters and generate live study material.*")
+    st.markdown("## 📝 PDF Study Notes Generator")
+    st.markdown("*Use Gemini to deeply analyze textbook chapters into comprehensive, readable study material.*")
     st.markdown("---")
 
     chapter_options = [f"Chapter {c['id']} — {c['title']}" for c in CHAPTERS]
@@ -798,38 +799,32 @@ def page_notes():
     ch_id = int(selected_ch_str.split("—")[0].replace("Chapter", "").strip())
     chapter = get_chapter_by_id(ch_id)
 
-    col1, col2 = st.columns([1, 1])
-    
-    with col1:
-        if st.button("✨ Generate Study Notes", use_container_width=True):
-            with st.spinner(f"Analyzing Chapter {ch_id}..."):
-                notes_text = generate_chapter_notes(chapter)
-                
-                if notes_text:
-                    st.session_state.current_notes = notes_text
-                    st.session_state.notes_chapter_id = ch_id
-                    st.session_state.notes_pdf_bytes = create_pdf_bytes(notes_text)
-                    st.rerun()
-
-    if "current_notes" in st.session_state and "notes_pdf_bytes" in st.session_state:
-        with col2:
-            st.success("✅ Notes ready for download.")
-            date_str = datetime.now().strftime("%Y%m%d")
-            fname = f"NISM_Study_Notes_Ch{st.session_state.notes_chapter_id}_{date_str}.pdf"
+    if st.button("✨ Generate Study Notes"):
+        with st.spinner(f"Deeply analyzing Chapter {ch_id} and generating study material... This might take 15 seconds."):
+            notes_text = generate_chapter_notes(chapter)
             
-            st.download_button(
-                label="📄 Download PDF", 
-                data=st.session_state.notes_pdf_bytes, 
-                file_name=fname, 
-                mime="application/pdf",
-                use_container_width=True
-            )
+            if notes_text:
+                st.session_state.current_notes = notes_text
+                st.session_state.notes_chapter_id = ch_id
+                st.session_state.notes_pdf_bytes = create_pdf_bytes(notes_text)
+            
+    if "current_notes" in st.session_state and "notes_pdf_bytes" in st.session_state:
+        st.success("✅ Study Material Generated Successfully!")
         
-        st.markdown("---")
-        st.markdown(f"### Study Material: {chapter['title']}")
+        date_str = datetime.now().strftime("%Y%m%d")
+        fname = f"NISM_Academy_Study_Notes_Ch{st.session_state.notes_chapter_id}_{date_str}.pdf"
+        
+        st.download_button(
+            label="📄 Download Study Material (PDF)", 
+            data=st.session_state.notes_pdf_bytes, 
+            file_name=fname, 
+            mime="application/pdf"
+        )
+        
         st.markdown(f"""
-        <div style="background-color: #1a1d24; border: 1px solid #2a2d35; border-radius: 8px; padding: 25px; color: #f0e8d8;">
-            {st.session_state.current_notes}
+        <div class="question-box">
+            <div class="q-label">Study Notes Preview</div>
+            <div class="exp-text">{st.session_state.current_notes}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -963,6 +958,7 @@ def page_review():
 # ─────────────────────────────────────────────
 def sidebar():
     with st.sidebar:
+        # FIXED: Removed size="small" from button to prevent Streamlit TypeError crash
         if "username" in st.session_state:
             st.markdown(f"👤 **Profile:** {st.session_state.username}")
             if st.button("Logout", key="logout_btn"):
@@ -993,7 +989,7 @@ def sidebar():
                 st.session_state.page = "home"
                 st.rerun()
 
-            if st.button("📝 Live Study Notes", use_container_width=True):
+            if st.button("📝 PDF Notes Generator", use_container_width=True):
                 reset_quiz()
                 st.session_state.page = "notes"
                 st.rerun()
